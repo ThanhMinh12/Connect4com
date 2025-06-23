@@ -1,0 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700&display=swap');
+
+@font-face {
+    font-family: 'Museo Sans Rounded';
+    src: url('./assets/fonts/MuseoSansRounded700.otf') format('opentype');  font-weight: bold;
+    font-style: normal;
+}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
