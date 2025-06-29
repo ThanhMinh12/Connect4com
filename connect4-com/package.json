@@ -5,9 +5,12 @@
   "main": "eslint.config.js",
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.10",
+    "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^3.4.17",
+    "vite": "^7.0.0",
+    "vite-plugin-svgr": "^4.3.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -28,6 +31,9 @@
     "normalize-range": "^0.1.2",
     "picocolors": "^1.1.1",
     "postcss-value-parser": "^4.2.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.3",
     "source-map-js": "^1.2.1",
     "update-browserslist-db": "^1.1.3"
   }

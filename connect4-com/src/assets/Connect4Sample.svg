@@ -1,0 +1,9 @@
+<!-- filepath: d:\ushio\Connect4com\connect4-com\src\assets\Connect4Sample.svg -->
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="20" fill="#FFD600"/>
+  <circle cx="50" cy="50" r="30" fill="#F44336"/>
+  <circle cx="150" cy="50" r="30" fill="#1976D2"/>
+  <circle cx="50" cy="150" r="30" fill="#1976D2"/>
+  <circle cx="150" cy="150" r="30" fill="#F44336"/>
+  <text x="100" y="110" text-anchor="middle" font-size="32" fill="#333" font-family="Arial" dy=".3em">C4</text>
+</svg>
