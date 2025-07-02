@@ -46,8 +46,18 @@ const FrontPage = () => {
             onClick={() => setSidebarOpen(o => !o)}
           >
             {/* hamburger icon */}
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <svg
+              className="w-5 h-5 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
             </svg>
           </button>
           <HeaderLogoButton icon={PopTextLogo} />
@@ -67,7 +77,12 @@ const FrontPage = () => {
         {/* Mobile sidebar drawer */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-40 flex">
-            <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setSidebarOpen(false)} />
+            {/* backdrop */}
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50"
+              onClick={() => setSidebarOpen(false)}
+            />
+            {/* sidebar panel */}
             <div className="relative z-50 w-64 bg-[#2f3136]">
               <Sidebar>
                 <SideBarLogoButton icon={PopTextLogo} />
@@ -79,8 +94,18 @@ const FrontPage = () => {
                   <button onClick={handleLogout} className="text-left px-4 py-2 text-red-400 hover:text-red-200">Logout</button>
                 ) : (
                   <>
-                    <SidebarUserAuthButton text="Login" to="/login" bg_color="bg-[#60a7b1]" hover_color="hover:bg-[#70b7b9]" />
-                    <SidebarUserAuthButton text="Sign Up" to="/signup" bg_color="bg-[#537178]" hover_color="hover:bg-[#638188]" />
+                    <SidebarUserAuthButton
+                      text="Login"
+                      to="/login"
+                      bg_color="bg-[#60a7b1]"
+                      hover_color="hover:bg-[#70b7b9]"
+                    />
+                    <SidebarUserAuthButton
+                      text="Sign Up"
+                      to="/signup"
+                      bg_color="bg-[#537178]"
+                      hover_color="hover:bg-[#638188]"
+                    />
                   </>
                 )}
               </Sidebar>
@@ -101,8 +126,18 @@ const FrontPage = () => {
             <button onClick={handleLogout} className="text-left px-4 py-2 text-red-400 hover:text-red-200">Logout</button>
           ) : (
             <>
-              <SidebarUserAuthButton text="Login" to="/login" bg_color="bg-[#60a7b1]" hover_color="hover:bg-[#70b7b9]" />
-              <SidebarUserAuthButton text="Sign Up" to="/signup" bg_color="bg-[#537178]" hover_color="hover:bg-[#638188]" />
+              <SidebarUserAuthButton
+                text="Login"
+                to="/login"
+                bg_color="bg-[#60a7b1]"
+                hover_color="hover:bg-[#70b7b9]"
+              />
+              <SidebarUserAuthButton
+                text="Sign Up"
+                to="/signup"
+                bg_color="bg-[#537178]"
+                hover_color="hover:bg-[#638188]"
+              />
             </>
           )}
         </Sidebar>
