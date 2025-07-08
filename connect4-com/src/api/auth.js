@@ -35,6 +35,7 @@ export async function logout() {
 
 export async function getCurrentUser() {
   const res = await fetch(`http://localhost:3000/auth/current`, {
+    method: 'GET',
     credentials: 'include'
   });
   const data = await res.json();

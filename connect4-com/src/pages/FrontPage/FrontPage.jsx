@@ -117,6 +117,7 @@ const FrontPage = () => {
   <SidebarButton icon={PlayGameIcon} text="Play Online" />
   <SidebarButton icon={PuzzleIcon} text="Puzzles" />
   <SidebarButton icon={LearnIcon} text="Learn" />
+  <SidebarButton icon={PlayGameIcon} text="Play Local" to="/room" />
   {user && <SidebarButton icon={ProfileIcon} text="View Profile" to="/profile" />}
 </Sidebar>
             </div>
@@ -152,6 +153,7 @@ const FrontPage = () => {
   <SidebarButton icon={PlayGameIcon} text="Play Online" />
   <SidebarButton icon={PuzzleIcon} text="Puzzles" />
   <SidebarButton icon={LearnIcon} text="Learn" />
+  <SidebarButton icon={PlayGameIcon} text="Play Local" to="/room" />
   {user && <SidebarButton icon={ProfileIcon} text="View Profile" to="/profile" />}
 </Sidebar>
       </div>
