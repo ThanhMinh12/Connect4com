@@ -9,7 +9,9 @@ const shareSession = require('express-socket.io-session');
 
 const app = express();
 const server = http.createServer(app);
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174'];
+
+// CORS configuration
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -19,17 +21,23 @@ app.use(cors({
   },
   credentials: true
 }));
+
+// Session configuration
 const sessionMiddleware = session({
-  secret: process.env.SECRET_KEY,
+  secret: process.env.SECRET_KEY || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    sameSite: 'lax', // or 'none' if using HTTPS
-    secure: false     // set to true in production with HTTPS
+    sameSite: 'lax',
+    secure: false, // set to true in production with HTTPS
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 });
+
 app.use(express.json());
 app.use(sessionMiddleware);
+
+// Socket.io configuration
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -42,16 +50,14 @@ io.use(shareSession(sessionMiddleware, {
   autoSave: true
 }));
 
-
+// Game logic
 const rooms = {};
 const games = {};
 
 io.on("connection", (socket) => {
   const userId = socket.handshake.session.userId;
-  //if (!userId) {
-  //  return socket.disconnect();
-  //}
-  //console.log(`User ${userId} connected with socket ID: ${socket.id}`);
+  console.log(`User ${userId || 'anonymous'} connected with socket ID: ${socket.id}`);
+  
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
     if (!rooms[roomId]) {
@@ -100,7 +106,7 @@ io.on("connection", (socket) => {
       };
       io.to(roomId).emit("gameState", games[roomId]);
     }
-  })
+  });
 
   socket.on("disconnect", () => {
     console.log(`User ${userId} disconnected`);
@@ -148,9 +154,16 @@ function checkWinner(board) {
   return null;
 }
 
-
+// Routes
 app.use('/auth', authRoutes);
 
 app.get('/', (req, res) => res.send('Misaka is running 😊'));
 
-server.listen(3000, () => console.log('http://localhost:3000'));
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

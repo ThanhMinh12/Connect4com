@@ -1,6 +1,6 @@
 // FrontPage.jsx
-import React, { useState, useEffect } from 'react'
-import { getCurrentUser, logout } from '../../api/auth'
+import React, { useState } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
 import Sidebar from './../../global_components/SideBar/SideBar.jsx'
 import SideBarLogoButton from './../../global_components/SideBar/SideBarLogoButton.jsx'
 import SidebarButton from './../../global_components/SideBar/SideBarButton.jsx'
@@ -17,22 +17,10 @@ import HeaderLogoButton from '../../global_components/Header/HeaderLogoButton.js
 
 const FrontPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [user, setUser] = useState(null);
+  const { user, logout } = useAuth();
 
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const data = await getCurrentUser();
-        setUser(data.user);
-      } catch (err) {
-        setUser(null);
-      }
-    }
-    fetchUser();
-  }, []);
   const handleLogout = async () => {
     await logout();
-    setUser(null);
     window.location.href = '/';
   };
   return (

@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
-import { getCurrentUser } from '../../api/auth';
+import { useAuth } from '../../contexts/AuthContext';
 
 function ProfilePage() {
-  const [user, setUser] = useState(null);
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    getCurrentUser()
-      .then(data => setUser(data.user))
-      .catch(() => setUser(null));
-  }, []);
+  if (loading) {
+    return (
+      <div style={{ padding: '2rem' }}>
+        <p>Loading user info...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '2rem' }}>
@@ -20,7 +21,7 @@ function ProfilePage() {
           <p><strong>Elo:</strong> {user.elo}</p>
         </div>
       ) : (
-        <p>Loading user info...</p>
+        <p>Please log in to view your profile.</p>
       )}
     </div>
   );
