@@ -1,4 +1,3 @@
-// FrontPage.jsx
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
@@ -24,10 +23,10 @@ const FrontPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!socket) return;
     socket.on('matchFound', ({ roomId }) => {
       navigate(`/room/${roomId}`);
     });
-    // No disconnect here!
     return () => {
       socket.off('matchFound');
     };

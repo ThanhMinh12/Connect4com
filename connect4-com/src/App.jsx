@@ -1,9 +1,8 @@
 import './App.css';
 import '@fontsource/inter/index.css';
-import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
-import { SocketContext, socket } from './contexts/SocketContext'
+import { SocketProvider } from './contexts/SocketContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import FrontPage from './pages/FrontPage/FrontPage.jsx'
 import LoginPage from './pages/UserAuth/LoginPage.jsx'
@@ -14,7 +13,7 @@ import GameRoom from './pages/Game/GameRoom.jsx'
 function App() {
     return (
       <AuthProvider>
-        <SocketContext.Provider value={socket}>
+        <SocketProvider>
           <Routes>
             <Route path="/" element={<FrontPage />} />
             <Route path="/login" element={<LoginPage />}/>
@@ -30,7 +29,7 @@ function App() {
               </ProtectedRoute>
             } />
           </Routes>
-        </SocketContext.Provider>
+        </SocketProvider>
       </AuthProvider>
   )
 }

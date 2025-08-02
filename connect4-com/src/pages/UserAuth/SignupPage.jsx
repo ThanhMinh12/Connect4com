@@ -70,7 +70,6 @@ function SignupPage() {
   };
 
   useEffect(() => {
-    // Check if Google script is already loaded
     if (window.google && window.google.accounts) {
       initializeGoogleSignIn();
     } else {
@@ -118,7 +117,6 @@ function SignupPage() {
     }
 
     return () => {
-      // Cleanup if needed
     };
   }, []);
 

@@ -11,7 +11,6 @@ const app = express();
 const server = http.createServer(app);
 const { v4: uuidv4 } = require("uuid");
 
-// CORS configuration
 const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];
 app.use(cors({
   origin: function (origin, callback) {
@@ -23,7 +22,6 @@ app.use(cors({
   credentials: true
 }));
 
-// Session configuration
 const sessionMiddleware = session({
   secret: process.env.SECRET_KEY || 'your-secret-key',
   resave: false,
@@ -38,7 +36,6 @@ const sessionMiddleware = session({
 app.use(express.json());
 app.use(sessionMiddleware);
 
-// Socket.io configuration
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -51,7 +48,6 @@ io.use(shareSession(sessionMiddleware, {
   autoSave: true
 }));
 
-// Game logic
 const rooms = {};
 const games = {};
 const matchmakingQueue = [];
@@ -59,6 +55,11 @@ const socketToUser = {};
 
 io.on("connection", (socket) => {
   const userId = socket.handshake.session.userId;
+  if (!userId) {
+    console.log("No userId in session, disconnecting socket.");
+    socket.disconnect();
+    return;
+  }
   socketToUser[socket.id] = userId;
   console.log(`User ${userId || 'anonymous'} connected with socket ID: ${socket.id}`);
 
@@ -131,7 +132,7 @@ io.on("connection", (socket) => {
   socket.on("restart", (roomId) => {
     if (!rooms[roomId]) return;
 
-    const isPlayer = rooms[roomId].red === socket.id || rooms[roomId].yellow === socket.id;
+    const isPlayer = rooms[roomId].red === userId || rooms[roomId].yellow === userId;
     if (!isPlayer) return;
 
     games[roomId] = {
@@ -188,7 +189,6 @@ io.on("connection", (socket) => {
     await updateEloInDB(winnerId, newWinnerElo);
     await updateEloInDB(loserId, newLoserElo);
 
-    // Insert into match history
     await db.query(`INSERT INTO matches (player1_id, player2_id, winner_id)
                     VALUES ($1, $2, $3)`, [winnerId, loserId, winnerId]);
 
@@ -274,12 +274,10 @@ async function updateEloInDB(userId, newElo) {
   );
 }
 
-// Routes
 app.use('/auth', authRoutes);
 
 app.get('/', (req, res) => res.send('Backend is running 😊'));
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({ error: 'Internal server error' });

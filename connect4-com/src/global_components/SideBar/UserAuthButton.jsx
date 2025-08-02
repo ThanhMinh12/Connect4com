@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 const HeaderUserAuthButton = ({
   text,
   to,
-  onClick, // allow custom onClick
+  onClick,
   bg_color = 'bg-[#60a7b1]',
   hover_color = 'hover:bg-[#36393f]',
   ...props
@@ -12,8 +12,8 @@ const HeaderUserAuthButton = ({
   const navigate = useNavigate();
 
   const handleClick = (e) => {
-    if (onClick) onClick(e);       // call passed onClick if exists
-    if (to) navigate(to);          // navigate if 'to' is provided
+    if (onClick) onClick(e);
+    if (to) navigate(to);
   };
 
   return (

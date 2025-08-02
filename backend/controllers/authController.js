@@ -82,7 +82,6 @@ async function googleLogin(req, res) {
         await userModel.linkGoogleId(user.id, googleId);
         console.log('[googleLogin] Linked existing user with Google ID');
       } else {
-        // Use Google name as username or adjust as needed
         user = await userModel.createGoogleUser(email, name, googleId);
         console.log('[googleLogin] Created new user from Google');
       }

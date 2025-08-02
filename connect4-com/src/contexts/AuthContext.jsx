@@ -24,7 +24,6 @@ export const AuthProvider = ({ children }) => {
       const data = await getCurrentUser();
       setUser(data.user);
     } catch (error) {
-      // 401 is expected when not logged in, don't log it as an error
       if (error.message.includes('401') || error.message.includes('Not authenticated')) {
         console.log('User not authenticated');
       } else {

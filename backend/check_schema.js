@@ -5,7 +5,7 @@ async function checkSchema() {
   try {
     console.log('Checking database schema...');
     
-    // Check if users table exists and show its structure
+
     const result = await db.query(`
       SELECT column_name, data_type, is_nullable 
       FROM information_schema.columns 
