@@ -1,5 +1,6 @@
 // FrontPage.jsx
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import Sidebar from './../../global_components/SideBar/SideBar.jsx'
 import SideBarLogoButton from './../../global_components/SideBar/SideBarLogoButton.jsx'
@@ -14,14 +15,34 @@ import SidebarUserAuthButton from '../../global_components/SideBar/UserAuthButto
 import Header from '../../global_components/Header/Header.jsx'
 import HeaderUserAuthButton from '../../global_components/Header/UserAuthButton.jsx'
 import HeaderLogoButton from '../../global_components/Header/HeaderLogoButton.jsx'
+import { useSocket } from '../../contexts/SocketContext';
 
 const FrontPage = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const socket = useSocket()
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    socket.on('matchFound', ({ roomId }) => {
+      navigate(`/room/${roomId}`);
+    });
+    // No disconnect here!
+    return () => {
+      socket.off('matchFound');
+    };
+  }, [socket, navigate]);
 
   const handleLogout = async () => {
     await logout();
-    window.location.href = '/';
+    navigate('/');
+  };
+  const handlePlayOnline = () => {
+    if (!user) {
+      alert('Please log in to play online.');
+      return;
+    }
+    socket.emit('playOnline', { userId: user.id });
   };
   return (
     <div className="flex h-screen bg-[#2f3136] text-white font-Nunito">
@@ -105,7 +126,7 @@ const FrontPage = () => {
   <SidebarButton icon={PlayGameIcon} text="Play Online" />
   <SidebarButton icon={PuzzleIcon} text="Puzzles" />
   <SidebarButton icon={LearnIcon} text="Learn" />
-  <SidebarButton icon={PlayGameIcon} text="Play Local" to="/room" />
+  <SidebarButton icon={PlayGameIcon} text="Play With Friend" to="/room" />
   {user && <SidebarButton icon={ProfileIcon} text="View Profile" to="/profile" />}
 </Sidebar>
             </div>
@@ -138,10 +159,10 @@ const FrontPage = () => {
   }
 >
   <SideBarLogoButton icon={PopTextLogo} />
-  <SidebarButton icon={PlayGameIcon} text="Play Online" />
+  <SidebarButton icon={PlayGameIcon} text="Play Online" onClick={handlePlayOnline}/>
   <SidebarButton icon={PuzzleIcon} text="Puzzles" />
   <SidebarButton icon={LearnIcon} text="Learn" />
-  <SidebarButton icon={PlayGameIcon} text="Play Local" to="/room" />
+  <SidebarButton icon={PlayGameIcon} text="Play With Friend" to="/room" />
   {user && <SidebarButton icon={ProfileIcon} text="View Profile" to="/profile" />}
 </Sidebar>
       </div>

@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react';
-import io from 'socket.io-client';
-
-const socket = io('http://localhost:3000', {
-  withCredentials: true
-});
+import { useSocket } from '../../contexts/SocketContext'
 
 function GameRoom() {
+  const socket = useSocket()
   const [board, setBoard] = useState(Array.from({ length: 6 }, () => Array(7).fill(null)));
   const [roomId, setRoomId] = useState("");
   const [joined, setJoined] = useState(false);
@@ -21,9 +18,15 @@ function GameRoom() {
       setWinner(game.winner);
       console.log("Received game state:", game);
     });
+    socket.on("roomCreated", (roomId) => {
+      setRoomId(roomId);
+      setJoined(true);
+      socket.emit("joinRoom", roomId);
+    });
     return () => {
       socket.off("playerRole");
       socket.off("gameState");
+      socket.off("roomCreated");
     };
   }, []);
 
@@ -56,17 +59,34 @@ function GameRoom() {
       )}
       {!joined ? (
         <div>
-          <input
-            className="text-black px-2 py-1"
-            placeholder="Enter Room ID"
-            value={roomId}
-            onChange={e => setRoomId(e.target.value)}
-          />
-          <button className="ml-2 px-3 py-1 bg-blue-600" onClick={joinRoom}>Join</button>
+          <div className="mb-2">
+            <button
+              className="px-3 py-1 bg-green-600 rounded"
+              onClick={() => socket.emit("createRoom")}
+            >
+              Create Room
+            </button>
+          </div>
+          <div className="flex items-center space-x-2">
+              <input
+              className="text-black px-2 py-1"
+              placeholder="Enter Room ID"
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+            />
+            <button className="px-3 py-1 bg-blue-600 rounded" onClick={() => {
+              socket.emit("joinRoom", roomId);
+              setJoined(true);
+            }}>
+              Join Room
+            </button>
+          </div>
         </div>
       ) : (
         <>
-          <p className="mb-4">Room: <strong>{roomId}</strong></p>
+          <div className="mb-4 text-lg">
+            <strong className="bg-black/30 px-2 py-1 rounded">You joined Room ID:</strong> <code className="bg-black/30 px-2 py-1 rounded">{roomId}</code>
+          </div>
           <div className="mb-2">
             {winner
               ? null
