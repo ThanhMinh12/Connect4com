@@ -1,6 +1,6 @@
-// FrontPage.jsx
-import React, { useState } from 'react'
-import './FrontPage.css'
+import React, { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 import Sidebar from './../../global_components/SideBar/SideBar.jsx'
 import SideBarLogoButton from './../../global_components/SideBar/SideBarLogoButton.jsx'
 import SidebarButton from './../../global_components/SideBar/SideBarButton.jsx'
@@ -14,38 +14,76 @@ import SidebarUserAuthButton from '../../global_components/SideBar/UserAuthButto
 import Header from '../../global_components/Header/Header.jsx'
 import HeaderUserAuthButton from '../../global_components/Header/UserAuthButton.jsx'
 import HeaderLogoButton from '../../global_components/Header/HeaderLogoButton.jsx'
+import { useSocket } from '../../contexts/SocketContext';
 
 const FrontPage = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const socket = useSocket()
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!socket) return;
+    socket.on('matchFound', ({ roomId }) => {
+      navigate(`/room/${roomId}`);
+    });
+    return () => {
+      socket.off('matchFound');
+    };
+  }, [socket, navigate]);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+  const handlePlayOnline = () => {
+    if (!user) {
+      alert('Please log in to play online.');
+      return;
+    }
+    socket.emit('playOnline', { userId: user.id });
+  };
   return (
     <div className="flex h-screen bg-[#2f3136] text-white font-Nunito">
       {/* Mobile header */}
       <div className="block lg:hidden">
-        <Header>
-          <button
-            className="lg:hidden mr-0 p-0 focus:outline-none"
-            onClick={() => setSidebarOpen(o => !o)}
-          >
-            <svg
-              className="w-5 h-5 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          </button>
+<Header
+  authButtons={
+    user ? (
+      <>
+        <HeaderUserAuthButton text="View Profile" to="/profile" />
+        <HeaderUserAuthButton text="Log Out" onClick={handleLogout} />
+      </>
+    ) : (
+      <>
+        <HeaderUserAuthButton text="Login" to="/login" />
+        <HeaderUserAuthButton text="Sign Up" to="/signup" />
+      </>
+    )
+  }
+>
+  <button
+    className="lg:hidden mr-0 p-0 focus:outline-none"
+    onClick={() => setSidebarOpen(o => !o)}
+  >
+    {/* hamburger icon */}
+    <svg
+      className="w-5 h-5 text-white"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 6h16M4 12h16M4 18h16"
+      />
+    </svg>
+  </button>
 
-          <HeaderLogoButton icon={PopTextLogo} />
-          <HeaderUserAuthButton text="Login" to="/login" />
-          <HeaderUserAuthButton text="Sign Up" to="/signup" />
-        </Header>
+  <HeaderLogoButton icon={PopTextLogo} />
+</Header>
 
         {/* Mobile sidebar drawer */}
         {sidebarOpen && (
@@ -57,25 +95,39 @@ const FrontPage = () => {
             />
             {/* sidebar panel */}
             <div className="relative z-50 w-64 bg-[#2f3136]">
-              <Sidebar>
-                <SideBarLogoButton icon={PopTextLogo} />
-                <SidebarButton icon={PlayGameIcon} text="Play Online" />
-                <SidebarButton icon={PuzzleIcon} text="Puzzles" />
-                <SidebarButton icon={LearnIcon} text="Learn" />
-                <SidebarButton icon={ProfileIcon} text="View Profile" />
-                <SidebarUserAuthButton
-                  text="Login"
-                  to="/login"
-                  bg_color="bg-[#60a7b1]"
-                  hover_color="hover:bg-[#70b7b9]"
-                />
-                <SidebarUserAuthButton
-                  text="Sign Up"
-                  to="/signup"
-                  bg_color="bg-[#537178]"
-                  hover_color="hover:bg-[#638188]"
-                />
-              </Sidebar>
+<Sidebar
+  authButtons={
+    user ? (
+      <SidebarUserAuthButton
+        onClick={handleLogout}
+        text="Logout"
+        className="text-red-400 hover:text-red-200"
+      />
+    ) : (
+      <>
+        <SidebarUserAuthButton
+          text="Login"
+          to="/login"
+          bg_color="bg-[#60a7b1]"
+          hover_color="hover:bg-[#70b7b9]"
+        />
+        <SidebarUserAuthButton
+          text="Sign Up"
+          to="/signup"
+          bg_color="bg-[#537178]"
+          hover_color="hover:bg-[#638188]"
+        />
+      </>
+    )
+  }
+>
+  <SideBarLogoButton icon={PopTextLogo} />
+  <SidebarButton icon={PlayGameIcon} text="Play Online" />
+  <SidebarButton icon={PuzzleIcon} text="Puzzles" />
+  <SidebarButton icon={LearnIcon} text="Learn" />
+  <SidebarButton icon={PlayGameIcon} text="Play With Friend" to="/room" />
+  {user && <SidebarButton icon={ProfileIcon} text="View Profile" to="/profile" />}
+</Sidebar>
             </div>
           </div>
         )}
@@ -83,25 +135,35 @@ const FrontPage = () => {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:block">
-        <Sidebar>
-          <SideBarLogoButton icon={PopTextLogo} />
-          <SidebarButton icon={PlayGameIcon} text="Play Online" />
-          <SidebarButton icon={PuzzleIcon} text="Puzzles" />
-          <SidebarButton icon={LearnIcon} text="Learn" />
-          <SidebarButton icon={ProfileIcon} text="View Profile" />
-          <SidebarUserAuthButton
-            text="Login"
-            to="/login"
-            bg_color="bg-[#60a7b1]"
-            hover_color="hover:bg-[#70b7b9]"
-          />
-          <SidebarUserAuthButton
-            text="Sign Up"
-            to="/signup"
-            bg_color="bg-[#537178]"
-            hover_color="hover:bg-[#638188]"
-          />
-        </Sidebar>
+<Sidebar
+  authButtons={
+    user ? (
+      <button onClick={handleLogout} className="text-left px-4 py-2 text-red-400 hover:text-red-200">Logout</button>
+    ) : (
+      <>
+        <SidebarUserAuthButton
+          text="Login"
+          to="/login"
+          bg_color="bg-[#60a7b1]"
+          hover_color="hover:bg-[#70b7b9]"
+        />
+        <SidebarUserAuthButton
+          text="Sign Up"
+          to="/signup"
+          bg_color="bg-[#537178]"
+          hover_color="hover:bg-[#638188]"
+        />
+      </>
+    )
+  }
+>
+  <SideBarLogoButton icon={PopTextLogo} />
+  <SidebarButton icon={PlayGameIcon} text="Play Online" onClick={handlePlayOnline}/>
+  <SidebarButton icon={PuzzleIcon} text="Puzzles" />
+  <SidebarButton icon={LearnIcon} text="Learn" />
+  <SidebarButton icon={PlayGameIcon} text="Play With Friend" to="/room" />
+  {user && <SidebarButton icon={ProfileIcon} text="View Profile" to="/profile" />}
+</Sidebar>
       </div>
 
       {/* Main content */}

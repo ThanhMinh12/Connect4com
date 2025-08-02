@@ -1,5 +1,7 @@
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 export async function login(email, password) {
-    const res = await fetch(`http://localhost:3000/auth/login`, {
+    const res = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -13,7 +15,7 @@ export async function login(email, password) {
 }
 
 export async function signup(email, username, password) {
-    const res = await fetch(`http://localhost:3000/auth/register`, {
+    const res = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -27,8 +29,20 @@ export async function signup(email, username, password) {
 }
 
 export async function logout() {
-  await fetch(`http://localhost:3000/auth/logout`, {
+  await fetch(`${API_URL}/auth/logout`, {
     method: 'POST',
     credentials: 'include'
   });
+}
+
+export async function getCurrentUser() {
+  const res = await fetch(`${API_URL}/auth/current`, {
+    method: 'GET',
+    credentials: 'include'
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to get user');
+  }
+  return data;
 }
