@@ -9,7 +9,7 @@ function SignupPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { login: authLogin } = useAuth();
+  const { login: authLogin, checkAuth } = useAuth();
   const navigate = useNavigate();
 
   const handleSignup = async (e) => {
@@ -51,6 +51,7 @@ function SignupPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${idToken}`,
         },
+        credentials: 'include',
       });
 
       if (!res.ok) {
@@ -62,6 +63,7 @@ function SignupPage() {
       const data = await res.json();
       console.log('Google login success:', data);
       authLogin(data.user);
+      await checkAuth();
       navigate('/');
     } catch (err) {
       console.error('Google login error:', err);
