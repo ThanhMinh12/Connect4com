@@ -22,26 +22,9 @@ const FrontPage = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!socket) return;
-    socket.on('matchFound', ({ roomId }) => {
-      navigate(`/room/${roomId}`);
-    });
-    return () => {
-      socket.off('matchFound');
-    };
-  }, [socket, navigate]);
-
   const handleLogout = async () => {
     await logout();
     navigate('/');
-  };
-  const handlePlayOnline = () => {
-    if (!user) {
-      alert('Please log in to play online.');
-      return;
-    }
-    socket.emit('playOnline', { userId: user.id });
   };
   return (
     <div className="flex h-screen bg-[#2f3136] text-white font-Nunito">
@@ -122,10 +105,10 @@ const FrontPage = () => {
   }
 >
   <SideBarLogoButton icon={PopTextLogo} />
-  <SidebarButton icon={PlayGameIcon} text="Play Online" />
+  <SidebarButton icon={PlayGameIcon} text="Play Online" to="/room/waiting"/>
   <SidebarButton icon={PuzzleIcon} text="Puzzles" />
   <SidebarButton icon={LearnIcon} text="Learn" />
-  <SidebarButton icon={PlayGameIcon} text="Play With Friend" to="/room" />
+  <SidebarButton icon={PlayGameIcon} text="Play With Friend" to="/room/friendly" />
   {user && <SidebarButton icon={ProfileIcon} text="View Profile" to="/profile" />}
 </Sidebar>
             </div>
@@ -158,10 +141,10 @@ const FrontPage = () => {
   }
 >
   <SideBarLogoButton icon={PopTextLogo} />
-  <SidebarButton icon={PlayGameIcon} text="Play Online" onClick={handlePlayOnline}/>
+  <SidebarButton icon={PlayGameIcon} text="Play Online" to="/room/waiting"/>
   <SidebarButton icon={PuzzleIcon} text="Puzzles" />
   <SidebarButton icon={LearnIcon} text="Learn" />
-  <SidebarButton icon={PlayGameIcon} text="Play With Friend" to="/room" />
+  <SidebarButton icon={PlayGameIcon} text="Play With Friend" to="/room/friendly" />
   {user && <SidebarButton icon={ProfileIcon} text="View Profile" to="/profile" />}
 </Sidebar>
       </div>

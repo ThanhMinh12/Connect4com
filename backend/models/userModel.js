@@ -1,5 +1,11 @@
 const db = require('../config/db');
 
+/*
+ * Functions for interacting with the database.
+ * These functions handle user registration, login, and retrieval.
+ * They interact directly with the database.
+ */
+
 async function findUserByEmail(email) {
   const res = await db.query('SELECT * FROM users WHERE email = $1', [email]);
   return res.rows[0];
