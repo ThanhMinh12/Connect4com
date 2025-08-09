@@ -1,2 +1,2 @@
 [build]
-rootDirectory = "backend"
+root = "backend"
