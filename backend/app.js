@@ -10,8 +10,13 @@ const db = require('./config/db');
 const app = express();
 const server = http.createServer(app);
 const { v4: uuidv4 } = require("uuid");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:5173'];
+
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -22,13 +27,21 @@ app.use(cors({
   credentials: true
 }));
 
+app.use(helmet());
+
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+}));
+
 const sessionMiddleware = session({
-  secret: process.env.SECRET_KEY || 'your-secret-key',
+  secret: process.env.SECRET_KEY,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    sameSite: 'lax',
-    secure: false, // set to true in production with HTTPS
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000
   }
 });
@@ -270,6 +283,13 @@ io.on("connection", (socket) => {
       }
     }
   });
+  socket.on("leaveQueue", () => {
+    const index = matchmakingQueue.indexOf(socket);
+    if (index !== -1) {
+      matchmakingQueue.splice(index, 1);
+      console.log(`[MATCHMAKING] User ${userId} left the queue`);
+    }
+  })
 });
 
 async function handleGameOver(roomId, winnerId, loserId) {

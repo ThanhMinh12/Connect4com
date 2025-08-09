@@ -1,0 +1,10 @@
+.GameRoom {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
