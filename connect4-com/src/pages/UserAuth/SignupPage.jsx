@@ -45,7 +45,7 @@ function SignupPage() {
     console.log('Google credential received:', response);
     
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/google-login`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/google-login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
