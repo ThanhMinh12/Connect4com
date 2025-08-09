@@ -1,46 +1,95 @@
 import { useEffect, useState } from 'react';
 import { useSocket } from '../../contexts/SocketContext'
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
+
+/*
+ * GameRoom component handles the game room logic.
+  * Allows players to join a room, make moves, and displays the game state.
+  * Listens for socket events to update the game state in real-time.
+  */
 
 function GameRoom() {
-  const socket = useSocket()
-  const [board, setBoard] = useState(Array.from({ length: 6 }, () => Array(7).fill(null)));
-  const [roomId, setRoomId] = useState("");
-  const [joined, setJoined] = useState(false);
-  const [playerRole, setPlayerRole] = useState(null);
-  const [currentPlayer, setCurrentPlayer] = useState(null);
-  const [winner, setWinner] = useState(null);
+  // Socket and routing
+  const socket = useSocket();
+  const { roomId: urlRoomId } = useParams();
+  const navigate = useNavigate();
 
+  // Room state
+  const [inputRoomId, setInputRoomId] = useState("");
+  const [joined, setJoined] = useState(false);
+  const [activeRoomId, setActiveRoomId] = useState(urlRoomId || "");
+
+  // Game state
+  const [playerRole, setPlayerRole] = useState(null);
+  const [winner, setWinner] = useState(null);
+  const [currentPlayer, setCurrentPlayer] = useState(null);
+  const [board, setBoard] = useState(Array.from({ length: 6 }, () => Array(7).fill(null)));
+
+  // Joins if contains roomId from matchmaking
   useEffect(() => {
-    socket.on("playerRole", setPlayerRole);
-    socket.on("gameState", (game) => {
-      setBoard(game.board);
-      setCurrentPlayer(game.currentPlayer);
-      setWinner(game.winner);
-      console.log("Received game state:", game);
-    });
-    socket.on("roomCreated", (roomId) => {
-      setRoomId(roomId);
+    if (urlRoomId && socket && !joined) {
+      socket.emit("joinRoom", urlRoomId);
+      setActiveRoomId(urlRoomId);
       setJoined(true);
-      socket.emit("joinRoom", roomId);
+    }
+  }, [urlRoomId, socket, joined]);
+
+  // Add socket event listeners
+  useEffect(() => {
+    if (!socket) {
+      return;
+    }
+
+    socket.on("roomCreated", (newRoomId) => {
+      setActiveRoomId(newRoomId);
+      socket.emit("joinRoom", newRoomId);
+      setJoined(true);
     });
+    
+    socket.on("playerRole", setPlayerRole);
+    socket.on("gameState", (gameState) => {
+      setBoard(gameState.board);
+      setCurrentPlayer(gameState.currentPlayer);
+      setWinner(gameState.winner);
+    });
+    socket.on("opponentLeft", () => {
+      alert("Opponent has gone.");
+    })
+
     return () => {
+      socket.off("roomCreated");
       socket.off("playerRole");
       socket.off("gameState");
-      socket.off("roomCreated");
+      socket.off("opponentLeft");
+      socket.off("matchFound");
     };
-  }, []);
+  }, [socket]);
 
+  // Use activeRoomId consistently in your component
+  const handleCellClick = (col) => {
+    if (!playerRole || winner || currentPlayer !== playerRole) return;
+    socket.emit("move", { roomId: activeRoomId, col, player: playerRole });
+  };
   const joinRoom = () => {
-    if (roomId) {
-      socket.emit("joinRoom", roomId);
-      setJoined(true);
+    if (!inputRoomId) return;
+    socket.emit("joinRoom", inputRoomId);
+    setActiveRoomId(inputRoomId);
+    setJoined(true);
+  };
+
+  const quitRoom = () => {
+    if (socket && activeRoomId) {
+      socket.emit("leaveRoom", activeRoomId);
+      setJoined(false);
+      setActiveRoomId("");
+      setPlayerRole(null);
+      setWinner(null);
+      setCurrentPlayer(null);
+      setBoard(Array.from({ length: 6 }, () => Array(7).fill(null)));
+      navigate("/");
     }
   };
 
-  const handleCellClick = (col) => {
-    if (!playerRole || winner || currentPlayer !== playerRole) return;
-    socket.emit("move", { roomId, col, player: playerRole });
-  };
 
   return (
     <div className="text-white p-4">
@@ -51,7 +100,7 @@ function GameRoom() {
           {winner === "yellow" && "Yellow wins!"}
           <button
             className="ml-4 px-3 py-1 bg-blue-600 text-white rounded"
-            onClick={() => socket.emit("restart", roomId)}
+            onClick={() => socket.emit("restart", activeRoomId)}
           >
             Play Again
           </button>
@@ -71,13 +120,10 @@ function GameRoom() {
               <input
               className="text-black px-2 py-1"
               placeholder="Enter Room ID"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
+              value={inputRoomId}
+              onChange={(e) => setInputRoomId(e.target.value)}
             />
-            <button className="px-3 py-1 bg-blue-600 rounded" onClick={() => {
-              socket.emit("joinRoom", roomId);
-              setJoined(true);
-            }}>
+            <button className="px-3 py-1 bg-blue-600 rounded" onClick={joinRoom}>
               Join Room
             </button>
           </div>
@@ -85,7 +131,14 @@ function GameRoom() {
       ) : (
         <>
           <div className="mb-4 text-lg">
-            <strong className="bg-black/30 px-2 py-1 rounded">You joined Room ID:</strong> <code className="bg-black/30 px-2 py-1 rounded">{roomId}</code>
+            <strong className="bg-black/30 px-2 py-1 rounded">You joined Room ID:</strong>
+            <code className="bg-black/30 px-2 py-1 rounded">{activeRoomId}</code>
+            <button
+              className="ml-4 px-3 py-1 bg-red-600 rounded"
+              onClick={quitRoom}
+            >
+              Quit Room
+            </button>
           </div>
           <div className="mb-2">
             {winner

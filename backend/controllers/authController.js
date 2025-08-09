@@ -4,6 +4,11 @@ const userModel = require('../models/userModel');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+/*
+ * Functions to handle user authentication.
+ * These are assigned to the routes in authRoutes.js.
+ */
+
 async function register(req, res) {
   const { email, username, password } = req.body;
   console.log('[register] Checking if user exists:', email);

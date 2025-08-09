@@ -29,7 +29,7 @@ const sessionMiddleware = session({
   cookie: {
     sameSite: 'lax',
     secure: false, // set to true in production with HTTPS
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000
   }
 });
 
@@ -44,20 +44,20 @@ const io = new Server(server, {
   }
 });
 
+// Share session data between Express and Socket.IO
 io.use(shareSession(sessionMiddleware, {
   autoSave: true
 }));
 
-const rooms = {};
-const games = {};
-const matchmakingQueue = [];
-const socketToUser = {};
+const rooms = {};  // Stores rooms: {{sockets1, red1, yellow1}, {sockets2, red2, yellow2}, ...}
+const games = {};  // Stores games: {{board1, currentPlayer1, winner1}, {board2, currentPlayer2, winner2}, ...}
+const matchmakingQueue = [];  // Queue of waiting sockets
+const socketToUser = {};  // Map <socketId, userId>
 
 io.on("connection", (socket) => {
   const userId = socket.handshake.session.userId;
   if (!userId) {
-    console.log("No userId in session, disconnecting socket.");
-    socket.disconnect();
+    socket.emit("needLogin");
     return;
   }
   socketToUser[socket.id] = userId;
@@ -81,11 +81,13 @@ io.on("connection", (socket) => {
         rooms[roomId].yellow = userId;
       }
     }
+    // Determine the role
     let playerRole = null;
     if (rooms[roomId].red === userId) playerRole = 'red';
     else if (rooms[roomId].yellow === userId) playerRole = 'yellow';
     socket.emit("playerRole", playerRole);
 
+    // Initialize the state
     if (!games[roomId]) {
       games[roomId] = {
         board: Array.from({ length: 6 }, () => Array(7).fill(null)),
@@ -97,15 +99,24 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("roomUpdate", rooms[roomId].sockets);
   });
 
-    socket.on("move", ({ roomId, col }) => {
+  socket.on("move", ({ roomId, col }) => {
     const game = games[roomId];
     const room = rooms[roomId];
-    if (!game || game.winner) return;
+    if (!game || game.winner) {
+      return;
+    }
     let playerColor = null;
-    if (room.red === userId) playerColor = 'red';
-    else if (room.yellow === userId) playerColor = 'yellow';
-    if (!playerColor || game.currentPlayer !== playerColor) return;
+    if (room.red === userId) {
+      playerColor = 'red';
+    }
+    else if (room.yellow === userId) {
+      playerColor = 'yellow';
+    }
+    if (!playerColor || game.currentPlayer !== playerColor) {
+      return;
+    }
 
+    // Find lowest empty cell in the column
     let row = -1;
     for (let r = game.board.length - 1; r >= 0; r--) {
       if (!game.board[r][col]) {
@@ -113,10 +124,16 @@ io.on("connection", (socket) => {
         break;
       }
     }
-    if (row === -1) return;
+    if (row === -1) {
+      return;
+    }
 
+
+    // Update board
     game.board[row][col] = playerColor;
     game.winner = checkWinner(game.board);
+
+    // Switch turn
     game.currentPlayer = playerColor === 'red' ? 'yellow' : 'red';
 
     io.to(roomId).emit("gameState", game);
@@ -145,6 +162,11 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log(`User ${userId} disconnected`);
+    const queueIndex = matchmakingQueue.indexOf(socket);
+    if (queueIndex !== -1) {
+      console.log(`Removing disconnected user from matchmaking queue`);
+      matchmakingQueue.splice(queueIndex, 1);
+    }
     for (const [roomId, roomData] of Object.entries(rooms)) {
       const { sockets, red, yellow } = roomData;
       const index = sockets.indexOf(socket.id);
@@ -165,18 +187,46 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("playOnline", () => {
-    const userId = socket.handshake.session.userId;
-    if (!userId) return;
+  socket.on("playOnline", (userId) => {
+    console.log(`[MATCHMAKING] User ${userId} wants to play online`);
+    console.log(`[MATCHMAKING] Queue length before: ${matchmakingQueue.length}`);
+    if (!userId) {
+      console.log("[MATCHMAKING] No userId provided, ignoring request");
+      return;
+    }
+    const alreadyInQueue = matchmakingQueue.some(s => socketToUser[s.id] === userId);
+      if (alreadyInQueue) {
+      console.log(`[MATCHMAKING] User ${userId} already in queue, ignoring duplicate request`);
+      return;
+    }
     if (matchmakingQueue.length > 0) {
       const opponentSocket = matchmakingQueue.shift();
-      const roomId = `room-${Date.now()}`;
+      const opponentId = socketToUser[opponentSocket.id];
+      console.log(`[MATCHMAKING] Found opponent ${opponentId}, creating room`);
+      const roomId = uuidv4();
+      if (!io.sockets.sockets.has(socket.id) || !io.sockets.sockets.has(opponentSocket.id)) {
+        console.log(`[MATCHMAKING] One player disconnected during matching, aborting`);
+        if (io.sockets.sockets.has(socket.id)) matchmakingQueue.push(socket);
+        if (io.sockets.sockets.has(opponentSocket.id)) matchmakingQueue.push(opponentSocket);
+        return;
+      }
       socket.join(roomId);
       opponentSocket.join(roomId);
-      io.to(roomId).emit("matchFound", { roomId });
-      rooms[roomId] = [socket.id, opponentSocket.id];
-    } 
-    else {
+      console.log(`[MATCHMAKING] Emitting matchFound for room ${roomId}`);
+      rooms[roomId] = { sockets: [], red: null, yellow: null };
+      rooms[roomId].sockets.push(socket.id, opponentSocket.id);
+      rooms[roomId].red = userId;
+      rooms[roomId].yellow = socketToUser[opponentSocket.id];
+      games[roomId] = {
+        board: Array.from({ length: 6 }, () => Array(7).fill(null)),
+        currentPlayer: 'red',
+        winner: null
+      };
+      io.to(roomId).emit("gameState", games[roomId]);
+      socket.emit("matchFound", roomId);
+      opponentSocket.emit("matchFound", roomId);
+    } else {
+      console.log(`[MATCHMAKING] No opponent available, adding to queue. Queue length: 1`);
       matchmakingQueue.push(socket);
     }
   });
@@ -196,6 +246,29 @@ io.on("connection", (socket) => {
       winnerId, newWinnerElo,
       loserId, newLoserElo
     });
+  });
+  socket.on("leaveRoom", (roomId) => {
+    socket.leave(roomId);
+    if (rooms[roomId] && rooms[roomId].sockets) {
+      const otherSocketId = rooms[roomId].sockets.find(id => id !== socket.id);
+      if (otherSocketId) {
+        io.to(otherSocketId).emit("opponentLeft");
+      }
+    }
+    if (rooms[roomId]) {
+      rooms[roomId].sockets = rooms[roomId].sockets.filter(id => id !== socket.id);
+      if (rooms[roomId].red === userId) {
+        rooms[roomId].red = null;
+      }
+      if (rooms[roomId].yellow === userId) {
+        rooms[roomId].yellow = null;
+      }
+
+      if (rooms[roomId].sockets.length === 0) {
+        delete rooms[roomId];
+        delete games[roomId];
+      }
+    }
   });
 });
 

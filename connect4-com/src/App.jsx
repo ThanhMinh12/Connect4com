@@ -9,6 +9,7 @@ import LoginPage from './pages/UserAuth/LoginPage.jsx'
 import SignupPage from './pages/UserAuth/SignupPage.jsx'
 import ProfilePage from './pages/Profile/ProfilePage.jsx'
 import GameRoom from './pages/Game/GameRoom.jsx'
+import WaitRoom from './pages/Game/WaitRoom.jsx';
 
 function App() {
     return (
@@ -23,7 +24,17 @@ function App() {
                 <ProfilePage />
               </ProtectedRoute>
             }/>
-            <Route path="/room" element={
+            <Route path="/room/friendly" element={
+              <ProtectedRoute>
+                <GameRoom />
+              </ProtectedRoute>
+            } />
+            <Route path="/room/waiting" element={
+              <ProtectedRoute>
+                <WaitRoom />
+              </ProtectedRoute>
+            } />
+            <Route path="/room/:roomId" element={
               <ProtectedRoute>
                 <GameRoom />
               </ProtectedRoute>
