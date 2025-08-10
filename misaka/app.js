@@ -40,6 +40,7 @@ app.use(rateLimit({
 const sessionMiddleware = session({
   store: new pgSession({
     conString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
   }),
   secret: process.env.SECRET_KEY,
   resave: false,
@@ -379,7 +380,9 @@ app.get('/', (req, res) => res.send('Backend is running 😊'));
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
