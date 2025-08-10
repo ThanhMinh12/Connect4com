@@ -8,10 +8,12 @@ const { Server } = require('socket.io');
 const shareSession = require('express-socket.io-session');
 const db = require('./config/db');
 const app = express();
+app.set("trust proxy", 1);
 const server = http.createServer(app);
 const { v4: uuidv4 } = require("uuid");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const pgSession = require("connect-pg-simple")(session);
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
@@ -31,10 +33,14 @@ app.use(helmet());
 
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100
+  max: 100,
+  trustProxy: true
 }));
 
 const sessionMiddleware = session({
+  store: new pgSession({
+    conString: process.env.DATABASE_URL,
+  }),
   secret: process.env.SECRET_KEY,
   resave: false,
   saveUninitialized: false,
