@@ -21,9 +21,11 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 app.use(cors({
   origin: function (origin, callback) {
+    console.log("[HTTP CORS] Incoming origin:", origin);
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    console.log("[HTTP CORS] Blocked origin:", origin);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true
@@ -58,8 +60,14 @@ app.use(sessionMiddleware);
 
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"],
+    origin: function (origin, callback) {
+      console.log("[Socket.IO CORS] Incoming origin:", origin);
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      console.log("[Socket.IO CORS] Blocked:", origin);
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true
   }
 });
