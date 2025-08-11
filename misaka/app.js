@@ -16,8 +16,10 @@ const rateLimit = require("express-rate-limit");
 const pgSession = require("connect-pg-simple")(session);
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:5173'];
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:5173', 'http://localhost:5174'];
+
+console.log("[CORS] Allowed origins on startup:", allowedOrigins);
 
 app.use(cors({
   origin: function (origin, callback) {
