@@ -245,7 +245,7 @@ io.on("connection", (socket) => {
       if (!io.sockets.sockets.has(socket.id) || !io.sockets.sockets.has(opponentSocketId)) {
         console.log(`[MATCHMAKING] One player disconnected during matching, aborting`);
         if (io.sockets.sockets.has(socket.id)) matchmakingQueue.push(socket.id);
-        if (io.sockets.sockets.has(opponentSocketId)) matchmakingQuFeue.push(opponentSocketId);
+        if (io.sockets.sockets.has(opponentSocketId)) matchmakingQueue.push(opponentSocketId);
         return;
       }
       socket.join(roomId);
