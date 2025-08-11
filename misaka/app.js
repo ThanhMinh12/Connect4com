@@ -40,7 +40,7 @@ app.use(rateLimit({
 const sessionMiddleware = session({
   store: new pgSession({
     conString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    ssl: process.env.NODE_ENV === 'production' ? { require: true, rejectUnauthorized: false } : false
   }),
   secret: process.env.SECRET_KEY,
   resave: false,
@@ -75,7 +75,7 @@ const matchmakingQueue = [];  // Queue of waiting sockets
 const socketToUser = {};  // Map <socketId, userId>
 
 io.on("connection", (socket) => {
-  const userId = socket.handshake.session.userId;
+  const userId = socket?.handshake?.session?.userId;
   if (!userId) {
     socket.emit("needLogin");
     return;
@@ -182,7 +182,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log(`User ${userId} disconnected`);
-    const queueIndex = matchmakingQueue.indexOf(socket);
+    const queueIndex = matchmakingQueue.indexOf(socket.id);
     if (queueIndex !== -1) {
       console.log(`Removing disconnected user from matchmaking queue`);
       matchmakingQueue.splice(queueIndex, 1);
@@ -207,27 +207,35 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("playOnline", (userId) => {
+  socket.on("playOnline", () => {
+    const userId = socketToUser[socket.id];
     console.log(`[MATCHMAKING] User ${userId} wants to play online`);
     console.log(`[MATCHMAKING] Queue length before: ${matchmakingQueue.length}`);
     if (!userId) {
       console.log("[MATCHMAKING] No userId provided, ignoring request");
       return;
     }
-    const alreadyInQueue = matchmakingQueue.some(s => socketToUser[s.id] === userId);
-      if (alreadyInQueue) {
+    const activeQueueIds = matchmakingQueue.filter(socketId => io.sockets.sockets.has(socketId) && socketToUser[socketId]);
+    if (activeQueueIds.length !== matchmakingQueue.length) {
+      console.log(`[MATCHMAKING] Cleaned queue, removed ${matchmakingQueue.length - activeQueueIds.length} disconnected sockets`);
+      matchmakingQueue.length = 0;
+      matchmakingQueue.push(...activeQueueIds);
+    }
+    const alreadyInQueue = matchmakingQueue.some(socketId => socketToUser[socketId] === userId);
+    if (alreadyInQueue) {
       console.log(`[MATCHMAKING] User ${userId} already in queue, ignoring duplicate request`);
       return;
     }
     if (matchmakingQueue.length > 0) {
-      const opponentSocket = matchmakingQueue.shift();
-      const opponentId = socketToUser[opponentSocket.id];
+      const opponentSocketId = matchmakingQueue.shift();
+      const opponentSocket = io.sockets.sockets.get(opponentSocketId);
+      const opponentId = socketToUser[opponentSocketId];
       console.log(`[MATCHMAKING] Found opponent ${opponentId}, creating room`);
       const roomId = uuidv4();
-      if (!io.sockets.sockets.has(socket.id) || !io.sockets.sockets.has(opponentSocket.id)) {
+      if (!io.sockets.sockets.has(socket.id) || !io.sockets.sockets.has(opponentSocketId)) {
         console.log(`[MATCHMAKING] One player disconnected during matching, aborting`);
-        if (io.sockets.sockets.has(socket.id)) matchmakingQueue.push(socket);
-        if (io.sockets.sockets.has(opponentSocket.id)) matchmakingQueue.push(opponentSocket);
+        if (io.sockets.sockets.has(socket.id)) matchmakingQueue.push(socket.id);
+        if (io.sockets.sockets.has(opponentSocketId)) matchmakingQuFeue.push(opponentSocketId);
         return;
       }
       socket.join(roomId);
@@ -247,7 +255,7 @@ io.on("connection", (socket) => {
       opponentSocket.emit("matchFound", roomId);
     } else {
       console.log(`[MATCHMAKING] No opponent available, adding to queue. Queue length: 1`);
-      matchmakingQueue.push(socket);
+      matchmakingQueue.push(socket.id);
     }
   });
 
@@ -291,7 +299,7 @@ io.on("connection", (socket) => {
     }
   });
   socket.on("leaveQueue", () => {
-    const index = matchmakingQueue.indexOf(socket);
+    const index = matchmakingQueue.indexOf(socket.id);
     if (index !== -1) {
       matchmakingQueue.splice(index, 1);
       console.log(`[MATCHMAKING] User ${userId} left the queue`);

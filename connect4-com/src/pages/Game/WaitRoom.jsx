@@ -18,14 +18,14 @@ function WaitRoom() {
   const hasJoinedQueue = useRef(false);
 
   useEffect(() => {
-    if (!socket || !user) {
-      setStatus('error');
+    if (!socket || !user?.id) {
       return;
     }
+    console.log("Attempting to join queue with userId =", user.id);
 
     if (!hasJoinedQueue.current) {
       setStatus("waiting");
-      socket.emit("playOnline", user.id);
+      socket.emit("playOnline");
       hasJoinedQueue.current = true;
     }
 
@@ -42,7 +42,7 @@ function WaitRoom() {
       console.log('[WaitRoom] Cleaning up event listeners');
       socket.off('matchFound', handleMatchFound);
     };
-  }, [socket, user, navigate]);
+  }, [socket, user?.id, navigate]);
 
   const cancelMatchmaking = () => {
     if (socket) {
