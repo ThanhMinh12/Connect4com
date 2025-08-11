@@ -21,6 +21,13 @@ function WaitRoom() {
     if (!socket || !user?.id) {
       return;
     }
+
+    socket.on("needLogin", () => {
+      console.log("[WaitRoom] Need login notification received");
+      setStatus('error');
+      navigate('/login');
+    });
+
     console.log("Attempting to join queue with userId =", user.id);
 
     if (!hasJoinedQueue.current) {
