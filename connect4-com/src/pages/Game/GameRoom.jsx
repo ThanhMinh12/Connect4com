@@ -62,9 +62,6 @@ function GameRoom() {
           playSound("lose");
         }
       }
-      if (gameState.currentPlayer !== playerRole) {
-        playSound("click");
-      }
     });
     socket.on("opponentLeft", () => {
       alert("Opponent has gone.");

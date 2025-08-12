@@ -11,6 +11,9 @@ export async function login(email, password) {
   if (!res.ok) {
     throw new Error(data.error || 'Login failed');
   }
+  if (data.token) {
+    localStorage.setItem("token", data.token);
+  }
   return data;
 }
 
@@ -24,6 +27,9 @@ export async function signup(email, username, password) {
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data.error || 'Signup failed');
+  }
+  if (data.token) {
+    localStorage.setItem("token", data.token);
   }
   return data;
 }
@@ -46,7 +52,7 @@ export async function getCurrentUser() {
     }
   });
   if (!res.ok) {
-    throw new Error(`${response.status}: ${response.statusText}`);
+    throw new Error(`${res.status}: ${res.statusText}`);
   }
   return res.json();
 }
