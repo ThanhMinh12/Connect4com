@@ -9,12 +9,18 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    if (user) {
-      const s = io(`${import.meta.env.VITE_API_URL}`, { withCredentials: true });
-      setSocket(s);
-      return () => s.disconnect();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return;
     }
-  }, [user]);
+    const s = io(import.meta.env.VITE_API_URL, {
+      auth: { token },
+      reconnection: true,
+      reconnectionDelay: 1000
+    });
+    setSocket(s);
+    return () => s.disconnect();
+  }, []);
 
   return (
     <SocketContext.Provider value={socket}>

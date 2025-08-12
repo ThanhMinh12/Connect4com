@@ -14,6 +14,7 @@ const { v4: uuidv4 } = require("uuid");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const pgSession = require("connect-pg-simple")(session);
+const jwt = require('jsonwebtoken');
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
@@ -74,10 +75,21 @@ const io = new Server(server, {
   }
 });
 
-// Share session data between Express and Socket.IO
-io.use(shareSession(sessionMiddleware, {
-  autoSave: true
-}));
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) {
+    return next(new Error("Authentication error"));
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.userId = decoded.userId;
+    socketToUser[socket.id] = decoded.userId;
+    next();
+  } catch (err) {
+    next(new Error("Authentication error"));
+  }
+});
 
 const rooms = {};  // Stores rooms: {{sockets1, red1, yellow1}, {sockets2, red2, yellow2}, ...}
 const games = {};  // Stores games: {{board1, currentPlayer1, winner1}, {board2, currentPlayer2, winner2}, ...}
