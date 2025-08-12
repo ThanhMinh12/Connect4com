@@ -22,6 +22,7 @@
     "helmet": "^8.1.0",
     "express-rate-limit": "^8.0.1",
     "@supabase/supabase-js": "^2.54.0",
-    "connect-pg-simple": "^10.0.0"
+    "connect-pg-simple": "^10.0.0",
+    "jsonwebtoken": "^9.0.2"
   }
 }

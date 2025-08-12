@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const { OAuth2Client } = require('google-auth-library');
 const userModel = require('../models/userModel');
+const jwt = require("jsonwebtoken");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -8,6 +9,21 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
  * Functions to handle user authentication.
  * These are assigned to the routes in authRoutes.js.
  */
+
+function generateToken(user) {
+  return jwt.sign(
+    {
+      userId: user.id,
+      username: user.username,
+      email: user.email,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "1h",
+      issuer: "misaka",
+    },
+  );
+}
 
 async function register(req, res) {
   const { email, username, password } = req.body;
@@ -19,36 +35,35 @@ async function register(req, res) {
   }
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await userModel.createUser(email, username, hashedPassword);
-  req.session.userId = user.id;
-  res.json({ message: 'Success', user });
+  const token = generateToken(user);
+  res.json({ message: "Success", user, token });
 }
 
 async function login(req, res) {
   const { email, password } = req.body;
   const user = await userModel.findUserByEmail(email);
-  if (!user) return res.status(400).json({ error: 'Invalid email or password' });
-
+  if (!user) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    return res.status(400).json({ error: 'Invalid email or password' });
+    return res.status(401).json({ error: "Invalid credentials" });
   }
-  req.session.userId = user.id;
-  res.json({ message: 'Success', user });
+  const token = generateToken(user);
+  return res.json({ message: "Success", user, token });
 }
 
 function logout(req, res) {
-  req.session.destroy(() => res.json({ message: 'Success' }));
+  res.json({ message: 'Success' });
 }
 
 async function getCurrentUser(req, res) {
-  if (!req.session.userId) {
+  if (!req.user || !req.user.userId) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
-  const user = await userModel.findUserById(req.session.userId);
-  if (!user) {
-    return res.status(404).json({ error: 'User not found' });
-  }
-  res.json({ user });
+  const user = await userModel.findUserById(req.user.userId);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  return res.json({ user });
 }
 
 async function googleLogin(req, res) {
@@ -94,9 +109,8 @@ async function googleLogin(req, res) {
       console.log('[googleLogin] Found existing Google user');
     }
 
-    req.session.userId = user.id;
-    console.log('[googleLogin] Login successful for user:', user.id);
-    res.json({ message: 'Success', user });
+    const token = generateToken(user);
+    res.json({ message: 'Success', user, token });
 
   } catch (err) {
     console.error('[googleLogin] Error verifying token:', err);
@@ -109,4 +123,25 @@ async function googleLogin(req, res) {
   }
 }
 
-module.exports = { register, login, logout, getCurrentUser, googleLogin };
+function requireAuth(req, res, next) {
+  const authHeader = req.headers.authorization || '';
+  if (!authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  const token = authHeader.split("Bearer ")[1];
+  if (!token) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = {
+      userId: decoded.userId,
+    };
+    return next();
+  } catch (err) {
+    console.error("[requireAuth] token verify failed:", err && err.message);
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
+}
+
+module.exports = { register, login, logout, getCurrentUser, googleLogin, requireAuth };

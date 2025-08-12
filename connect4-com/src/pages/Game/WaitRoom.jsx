@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../contexts/SocketContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSound } from '../../contexts/SoundContext';
 import Connect4Sample from "./../../assets/Connect4Sample.svg";
 
 /*
@@ -11,16 +12,44 @@ import Connect4Sample from "./../../assets/Connect4Sample.svg";
  */
 
 function WaitRoom() {
-  const socket = useSocket();
+  const { playSound } = useSound();
+  const { socket } = useSocket();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState('connecting');
   const hasJoinedQueue = useRef(false);
+  const [queueStatus, setQueueStatus] = useState("waiting");
 
   useEffect(() => {
+    hasJoinedQueue.current = false;
+    console.log("Socket state:", {
+      exists: !!socket,
+      connected: socket?.connected,
+      id: socket?.id
+    });
     if (!socket || !user?.id) {
       return;
     }
+
+    const handleConnect = () => {
+      if (!hasJoinedQueue.current) {
+        console.log(`Attempting to join queue with userId = ${user.id}`);
+        socket.emit("playOnline");
+        hasJoinedQueue.current = true;
+      }
+    };
+    if (socket.connected) {
+      handleConnect();
+    }
+    else {
+      socket.on("connect", handleConnect);
+    }
+
+    socket.on("queueJoined", () => {
+      console.log("[WaitRoom] Successfully joined the queue!");
+      setQueueStatus('inQueue');
+      setStatus("waiting");
+    });
 
     socket.on("needLogin", () => {
       console.log("[WaitRoom] Need login notification received");
@@ -30,26 +59,25 @@ function WaitRoom() {
 
     console.log("Attempting to join queue with userId =", user.id);
 
-    if (!hasJoinedQueue.current) {
-      setStatus("waiting");
-      socket.emit("playOnline");
-      hasJoinedQueue.current = true;
-    }
-
     const handleMatchFound = (roomId) => {
       console.log(`[WaitRoom] Match found! Room: ${roomId}`);
+      playSound('click');
       setStatus('matched');
-      // Remove event listener before navigating to prevent duplicate events
       socket.off('matchFound', handleMatchFound);
       navigate(`/room/${roomId}`);
     };
 
     socket.on('matchFound', handleMatchFound);
     return () => {
+      socket.off('connect', handleConnect);
+      socket.off('queueJoined');
       console.log('[WaitRoom] Cleaning up event listeners');
       socket.off('matchFound', handleMatchFound);
+      if (hasJoinedQueue.current) {
+        socket.emit('leaveQueue');
+      }
     };
-  }, [socket, user?.id, navigate]);
+  }, [socket, user?.id, navigate, playSound]);
 
   const cancelMatchmaking = () => {
     if (socket) {

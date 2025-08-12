@@ -36,13 +36,17 @@ export async function logout() {
 }
 
 export async function getCurrentUser() {
-  const res = await fetch(`${API_URL}/auth/current`, {
-    method: 'GET',
-    credentials: 'include'
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || 'Failed to get user');
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error('Not authenticated');
   }
-  return data;
+  const res = await fetch(`${API_URL}/auth/current`, {
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
+  });
+  if (!res.ok) {
+    throw new Error(`${response.status}: ${response.statusText}`);
+  }
+  return res.json();
 }
