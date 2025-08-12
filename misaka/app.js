@@ -45,7 +45,6 @@ app.use(express.json());
 const io = new Server(server, {
   cors: {
     origin: function (origin, callback) {
-      console.log("[Socket CORS] Incoming origin:", origin);
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
