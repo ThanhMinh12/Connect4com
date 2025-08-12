@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSocket } from '../../contexts/SocketContext'
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useSound } from '../../contexts/SoundContext';
 import Connect4Sample from "./../../assets/Connect4Sample.svg";
 
 /*
@@ -10,8 +11,9 @@ import Connect4Sample from "./../../assets/Connect4Sample.svg";
   */
 
 function GameRoom() {
+  const { playSound } = useSound();
   // Socket and routing
-  const socket = useSocket();
+  const { socket } = useSocket();
   const { roomId: urlRoomId } = useParams();
   const navigate = useNavigate();
 
@@ -52,6 +54,17 @@ function GameRoom() {
       setBoard(gameState.board);
       setCurrentPlayer(gameState.currentPlayer);
       setWinner(gameState.winner);
+      if (gameState.winner) {
+        if (gameState.winner === playerRole) {
+          playSound("win");
+        }
+        else {
+          playSound("lose");
+        }
+      }
+      if (gameState.currentPlayer !== playerRole) {
+        playSound("click");
+      }
     });
     socket.on("opponentLeft", () => {
       alert("Opponent has gone.");
@@ -64,21 +77,23 @@ function GameRoom() {
       socket.off("opponentLeft");
       socket.off("matchFound");
     };
-  }, [socket]);
+  }, [socket, playSound, playerRole, currentPlayer, winner]);
 
-  // Use activeRoomId consistently in your component
   const handleCellClick = (col) => {
     if (!playerRole || winner || currentPlayer !== playerRole) return;
+    playSound("click");
     socket.emit("move", { roomId: activeRoomId, col, player: playerRole });
   };
   const joinRoom = () => {
     if (!inputRoomId) return;
+    playSound('click');
     socket.emit("joinRoom", inputRoomId);
     setActiveRoomId(inputRoomId);
     setJoined(true);
   };
 
   const quitRoom = () => {
+    playSound('click');
     if (socket && activeRoomId) {
       socket.emit("leaveRoom", activeRoomId);
       setJoined(false);

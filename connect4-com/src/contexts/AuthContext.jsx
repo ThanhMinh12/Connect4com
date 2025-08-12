@@ -20,32 +20,67 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAuth = async () => {
-    try {
-      const data = await getCurrentUser();
-      setUser(data.user);
-    } catch (error) {
-      if (error.message.includes('401') || error.message.includes('Not authenticated')) {
-        console.log('User not authenticated');
-      } else {
-        console.error('Auth check error:', error);
-      }
+    const token = localStorage.getItem('token');
+    if (!token) {
       setUser(null);
-    } finally {
       setLoading(false);
+      return;
+    }
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/current`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+      }
+      else {
+        localStorage.removeItem('token');
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      localStorage.removeItem('token');
+      setUser(null);
+    }
+    setLoading(false);
+  };
+
+  const login = (userData, token) => {
+    setUser(userData);
+    if (token) {
+      localStorage.setItem('token', token);
     }
   };
 
-  const login = (userData) => {
-    setUser(userData);
+  const logoutUser = async () => {
+    localStorage.removeItem('token');
+    setUser(null);
   };
 
-  const logoutUser = async () => {
+  const handleGoogleLogin = async (response) => {
     try {
-      await logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      setUser(null);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/google-login`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${response.credential}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        setUser(data.user);
+        console.log("Server response:", data)
+        return true;
+      }
+      return false;
+    }
+    catch (error) {
+      console.error("Google login error:", error);
+      return false;
     }
   };
 
@@ -54,7 +89,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout: logoutUser,
-    checkAuth
+    checkAuth,
+    handleGoogleLogin,
   };
 
   return (

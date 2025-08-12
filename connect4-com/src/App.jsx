@@ -10,13 +10,17 @@ import SignupPage from './pages/UserAuth/SignupPage.jsx'
 import ProfilePage from './pages/Profile/ProfilePage.jsx'
 import GameRoom from './pages/Game/GameRoom.jsx'
 import WaitRoom from './pages/Game/WaitRoom.jsx';
+import { SoundProvider } from './contexts/SoundContext.jsx';
+import SoundControls from './components/SoundControls.jsx';
 
 function App() {
     return (
-      <AuthProvider>
-        <SocketProvider>
-          <Routes>
-            <Route path="/" element={<FrontPage />} />
+      <SoundProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <SoundControls />
+            <Routes>
+              <Route path="/" element={<FrontPage />} />
             <Route path="/login" element={<LoginPage />}/>
             <Route path="/signup" element={<SignupPage />}/>
             <Route path="/profile" element={
@@ -42,6 +46,7 @@ function App() {
           </Routes>
         </SocketProvider>
       </AuthProvider>
+    </SoundProvider>
   )
 }
 

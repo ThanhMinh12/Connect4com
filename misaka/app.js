@@ -5,7 +5,6 @@ const authRoutes = require('./routes/authRoutes');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
-const shareSession = require('express-socket.io-session');
 const db = require('./config/db');
 const app = express();
 app.set("trust proxy", 1);
@@ -13,7 +12,6 @@ const server = http.createServer(app);
 const { v4: uuidv4 } = require("uuid");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const pgSession = require("connect-pg-simple")(session);
 const jwt = require('jsonwebtoken');
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -42,42 +40,31 @@ app.use(rateLimit({
   trustProxy: true
 }));
 
-const sessionMiddleware = session({
-  store: new pgSession({
-    conString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { require: true, rejectUnauthorized: false } : false
-  }),
-  secret: process.env.SECRET_KEY,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === "production",
-    httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    maxAge: 24 * 60 * 60 * 1000
-  }
-});
-
 app.use(express.json());
-app.use(sessionMiddleware);
 
 const io = new Server(server, {
   cors: {
     origin: function (origin, callback) {
-      console.log("[Socket.IO CORS] Incoming origin:", origin);
+      console.log("[Socket CORS] Incoming origin:", origin);
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      console.log("[Socket.IO CORS] Blocked:", origin);
+      console.log("[Socket CORS] Blocked origin:", origin);
       return callback(new Error("Not allowed by CORS"));
     },
-    credentials: true
-  }
+    methods: ["GET", "POST"],
+    credentials: false,
+    allowedHeaders: ["Authorization", "Content-Type"],
+  },
+  transports: ["polling", "websocket"],
+  allowUpgrades: true,
 });
 
 io.use((socket, next) => {
+  // Get token from frontend
   const token = socket.handshake.auth.token;
   if (!token) {
+    console.log("[Socket Auth] No token provided");
     return next(new Error("Authentication error"));
   }
   
@@ -87,6 +74,7 @@ io.use((socket, next) => {
     socketToUser[socket.id] = decoded.userId;
     next();
   } catch (err) {
+    console.error("[Socket Auth] Token verification failed:", err.message);
     next(new Error("Authentication error"));
   }
 });
@@ -97,12 +85,11 @@ const matchmakingQueue = [];  // Queue of waiting sockets
 const socketToUser = {};  // Map <socketId, userId>
 
 io.on("connection", (socket) => {
-  const userId = socket?.handshake?.session?.userId;
+  const userId = socket.userId;
   if (!userId) {
     socket.emit("needLogin");
     return;
   }
-  socketToUser[socket.id] = userId;
   console.log(`User ${userId || 'anonymous'} connected with socket ID: ${socket.id}`);
 
   socket.on("createRoom", () => {
@@ -204,6 +191,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log(`User ${userId} disconnected`);
+    delete socketToUser[socket.id];
     const queueIndex = matchmakingQueue.indexOf(socket.id);
     if (queueIndex !== -1) {
       console.log(`Removing disconnected user from matchmaking queue`);
@@ -230,7 +218,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("playOnline", () => {
-    const userId = socketToUser[socket.id];
+    const userId = socket.userId;
     console.log(`[MATCHMAKING] User ${userId} wants to play online`);
     console.log(`[MATCHMAKING] Queue length before: ${matchmakingQueue.length}`);
     if (!userId) {
@@ -275,9 +263,12 @@ io.on("connection", (socket) => {
       io.to(roomId).emit("gameState", games[roomId]);
       socket.emit("matchFound", roomId);
       opponentSocket.emit("matchFound", roomId);
+      socket.emit("playerRole", "red");
+      opponentSocket.emit("playerRole", "yellow");
     } else {
       console.log(`[MATCHMAKING] No opponent available, adding to queue. Queue length: 1`);
       matchmakingQueue.push(socket.id);
+      socket.emit("queueJoined");
     }
   });
 

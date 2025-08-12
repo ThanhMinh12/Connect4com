@@ -15,9 +15,10 @@ import Header from '../../global_components/Header/Header.jsx'
 import HeaderUserAuthButton from '../../global_components/Header/UserAuthButton.jsx'
 import HeaderLogoButton from '../../global_components/Header/HeaderLogoButton.jsx'
 import { useSocket } from '../../contexts/SocketContext';
+import { useSound } from '../../contexts/SoundContext';
 
 const FrontPage = () => {
-  const socket = useSocket()
+  const { playSound } = useSound();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -47,7 +48,10 @@ const FrontPage = () => {
 >
   <button
     className="lg:hidden mr-0 p-0 focus:outline-none"
-    onClick={() => setSidebarOpen(o => !o)}
+    onClick={() => {
+      playSound('click');
+      setSidebarOpen(o => !o);
+    }}
   >
     {/* hamburger icon */}
     <svg

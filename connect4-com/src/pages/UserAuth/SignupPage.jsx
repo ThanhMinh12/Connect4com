@@ -62,7 +62,7 @@ function SignupPage() {
 
       const data = await res.json();
       console.log('Google login success:', data);
-      authLogin(data.user);
+      authLogin(data.user, data.token);
       await checkAuth();
       navigate('/');
     } catch (err) {
