@@ -8,13 +8,14 @@ const SidebarButton = ({
     to = '/',
     ...props }) => {
         const navigate = useNavigate()
+        const { playSound } = useSound()
     return (
         <button
             className="w-full flex items-center px-4 py-3 rounded-lg bg-[#46494f] hover:bg-[#36393f] transition-colors duration-150 group overflow-visible"
             {...props}
             onClick={() => {
                 to && navigate(to)
-                useSound().playSound('click')
+                playSound('click')
             }}
         >
             <span className="flex items-center justify-center w-14 h-14 overflow-visible">

@@ -11,14 +11,7 @@ export const SocketProvider = ({ children }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) {
-      return;
-    }
     const token = localStorage.getItem('token');
-    if (!token) {
-      console.error("No token found")
-      return;
-    }
     const s = io(import.meta.env.VITE_API_URL, {
       // Send token to backend
       auth: { token },
@@ -33,16 +26,12 @@ export const SocketProvider = ({ children }) => {
         navigate("/login");
       }
     });
-    s.on("needLogin", () => {
-      console.log("Login required");
-      navigate("/login");
-    });
     setSocket(s);
     return () => {
       s.disconnect();
       setSocket(null);
     };
-  }, [user]);
+  }, []);
 
   const value = {
     socket,

@@ -22,18 +22,13 @@ function WaitRoom() {
 
   useEffect(() => {
     hasJoinedQueue.current = false;
-    console.log("Socket state:", {
-      exists: !!socket,
-      connected: socket?.connected,
-      id: socket?.id
-    });
-    if (!socket || !user?.id) {
+    if (!socket) {
       return;
     }
 
     const handleConnect = () => {
       if (!hasJoinedQueue.current) {
-        console.log(`Attempting to join queue with userId = ${user.id}`);
+        console.log(`Attempting to join queue as ${user ? `user ${user.id}` : 'anonymous'}`);
         socket.emit("playOnline");
         hasJoinedQueue.current = true;
       }
@@ -51,20 +46,14 @@ function WaitRoom() {
       setStatus("waiting");
     });
 
-    socket.on("needLogin", () => {
-      console.log("[WaitRoom] Need login notification received");
-      setStatus('error');
-      navigate('/login');
-    });
-
-    console.log("Attempting to join queue with userId =", user.id);
+    console.log("Attempting to join queue as", user?.id || "anonymous");
 
     const handleMatchFound = (roomId) => {
       console.log(`[WaitRoom] Match found! Room: ${roomId}`);
       playSound('click');
       setStatus('matched');
       socket.off('matchFound', handleMatchFound);
-      navigate(`/room/${roomId}`);
+      navigate(`/room/${roomId}`, { state: { fromMatchmaking: true } });
     };
 
     socket.on('matchFound', handleMatchFound);
@@ -77,7 +66,7 @@ function WaitRoom() {
         socket.emit('leaveQueue');
       }
     };
-  }, [socket, user?.id, navigate, playSound]);
+  }, [socket, navigate, playSound]);
 
   const cancelMatchmaking = () => {
     if (socket) {

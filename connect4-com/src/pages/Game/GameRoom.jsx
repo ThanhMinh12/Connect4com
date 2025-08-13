@@ -21,6 +21,7 @@ function GameRoom() {
   const [inputRoomId, setInputRoomId] = useState("");
   const [joined, setJoined] = useState(false);
   const [activeRoomId, setActiveRoomId] = useState(urlRoomId || "");
+  const [rooms, setRooms] = useState({});
 
   // Game state
   const [playerRole, setPlayerRole] = useState(null);
@@ -31,17 +32,38 @@ function GameRoom() {
   // Joins if contains roomId from matchmaking
   useEffect(() => {
     if (urlRoomId && socket && !joined) {
-      socket.emit("joinRoom", urlRoomId);
-      setActiveRoomId(urlRoomId);
-      setJoined(true);
+      const fromMatchmaking = location?.state?.fromMatchmaking;
+      if (fromMatchmaking) {
+        console.log("Coming from matchmaking, not emitting joinRoom");
+        setActiveRoomId(urlRoomId);
+        setJoined(true);
+        // Initialize rooms data for matchmaking
+        setRooms(prevRooms => ({
+          ...prevRooms,
+          [urlRoomId]: { red: socket.userId, yellow: null }
+        }));
+      }
+      else {
+        console.log("Direct room join, emitting joinRoom");
+        socket.emit("joinRoom", urlRoomId);
+        setActiveRoomId(urlRoomId);
+        setJoined(true);
+      }
     }
-  }, [urlRoomId, socket, joined]);
+  }, [urlRoomId, socket, joined, location]);
 
   // Add socket event listeners
   useEffect(() => {
     if (!socket) {
       return;
     }
+
+    socket.on("roomInfo", (roomInfo) => {
+      setRooms(prevRooms => ({
+        ...prevRooms,
+        [activeRoomId]: roomInfo
+      }));
+    });
 
     socket.on("roomCreated", (newRoomId) => {
       setActiveRoomId(newRoomId);
@@ -67,12 +89,18 @@ function GameRoom() {
       alert("Opponent has gone.");
     })
 
+    socket.on("playerJoined", (username) => {
+      alert(`Player ${username} joined`);
+    });
+
     return () => {
       socket.off("roomCreated");
       socket.off("playerRole");
       socket.off("gameState");
       socket.off("opponentLeft");
       socket.off("matchFound");
+      socket.off("roomInfo");
+      socket.off("playerJoined");
     };
   }, [socket, playSound, playerRole, currentPlayer, winner]);
 
@@ -216,7 +244,10 @@ function GameRoom() {
               <div className="flex items-center space-x-4">
                 <div className="flex items-center">
                   <div className={`w-4 h-4 rounded-full ${playerRole === 'red' ? 'bg-red-500' : 'bg-yellow-400'} mr-2`}></div>
-                  <span className="text-white">You: {playerRole === 'red' ? 'Red' : 'Yellow'}</span>
+                  <span className="text-white">
+                    You: {playerRole === 'red' ? 'Red' : 'Yellow'}
+                    {socket?.userId?.startsWith('anon_') && <span className="text-sm ml-1">(Guest)</span>}
+                  </span>
                 </div>
                 <button
                   className="px-4 py-2 bg-[#537178] hover:bg-[#638188] text-white rounded-md transition-colors duration-200"
@@ -228,26 +259,26 @@ function GameRoom() {
             </div>
 
             {/* Game board */}
-            <div className="relative mx-auto w-fit bg-[#60a7b1] bg-opacity-80 p-4 rounded-lg shadow-lg">
+            <div className="relative mx-auto w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg bg-[#60a7b1] bg-opacity-80 p-2 sm:p-4 rounded-lg shadow-lg">
               {/* Board top */}
-              <div className="h-4 bg-[#537178] w-full rounded-t-lg mb-2"></div>
+              <div className="h-2 sm:h-4 bg-[#537178] w-full rounded-t-lg mb-1 sm:mb-2"></div>
               
               {/* Board grid */}
-              <div className="grid grid-rows-6 grid-cols-7 gap-1 bg-[#537178] p-2 rounded-md">
+              <div className="grid grid-rows-6 grid-cols-7 gap-0.5 sm:gap-1 bg-[#537178] p-1 sm:p-2 rounded-md">
                 {board.map((row, rowIndex) =>
                   row.map((cell, colIndex) => (
                     <div
                       key={`${rowIndex}-${colIndex}`}
                       onClick={() => handleCellClick(colIndex)}
-                      className={`w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center cursor-pointer bg-[#2f3136] hover:bg-gray-800 transition-colors relative
+                      className={`aspect-square w-full rounded-full flex items-center justify-center cursor-pointer bg-[#2f3136] hover:bg-gray-800 transition-colors relative
                         ${(winner || currentPlayer !== playerRole) ? "pointer-events-none" : ""}
                         ${!cell && currentPlayer === playerRole ? "hover:after:content-[''] hover:after:absolute hover:after:top-0 hover:after:left-0 hover:after:right-0 hover:after:bottom-0 hover:after:bg-white hover:after:bg-opacity-10 hover:after:rounded-full" : ""}`}
                     >
                       {cell && (
-                        <div className={`w-12 h-12 md:w-14 md:h-14 rounded-full shadow-inner
+                        <div className={`w-3/4 h-3/4 rounded-full shadow-inner
                           ${cell === "red" ? "bg-gradient-to-br from-red-400 to-red-600" : "bg-gradient-to-br from-yellow-300 to-yellow-500"}`}>
                           <div className="w-full h-full rounded-full flex items-center justify-center">
-                            <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full opacity-30
+                            <div className={`w-1/2 h-1/2 rounded-full opacity-30
                               ${cell === "red" ? "bg-red-300" : "bg-yellow-200"}`}></div>
                           </div>
                         </div>
