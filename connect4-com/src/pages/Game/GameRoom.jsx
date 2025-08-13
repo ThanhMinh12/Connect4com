@@ -228,26 +228,26 @@ function GameRoom() {
             </div>
 
             {/* Game board */}
-            <div className="relative mx-auto w-fit bg-[#60a7b1] bg-opacity-80 p-4 rounded-lg shadow-lg">
+            <div className="relative mx-auto w-full max-w-[350px] sm:max-w-[420px] md:max-w-[500px] bg-[#60a7b1] bg-opacity-80 p-2 sm:p-4 rounded-lg shadow-lg">
               {/* Board top */}
-              <div className="h-4 bg-[#537178] w-full rounded-t-lg mb-2"></div>
-              
+              <div className="h-2 sm:h-4 bg-[#537178] w-full rounded-t-lg mb-1 sm:mb-2"></div>
+  
               {/* Board grid */}
-              <div className="grid grid-rows-6 grid-cols-7 gap-1 bg-[#537178] p-2 rounded-md">
+              <div className="grid grid-rows-6 grid-cols-7 gap-[2px] sm:gap-1 bg-[#537178] p-1 sm:p-2 rounded-md">
                 {board.map((row, rowIndex) =>
                   row.map((cell, colIndex) => (
                     <div
                       key={`${rowIndex}-${colIndex}`}
                       onClick={() => handleCellClick(colIndex)}
-                      className={`w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center cursor-pointer bg-[#2f3136] hover:bg-gray-800 transition-colors relative
-                        ${(winner || currentPlayer !== playerRole) ? "pointer-events-none" : ""}
-                        ${!cell && currentPlayer === playerRole ? "hover:after:content-[''] hover:after:absolute hover:after:top-0 hover:after:left-0 hover:after:right-0 hover:after:bottom-0 hover:after:bg-white hover:after:bg-opacity-10 hover:after:rounded-full" : ""}`}
+                      className={`aspect-square w-full rounded-full flex items-center justify-center cursor-pointer bg-[#2f3136] hover:bg-gray-800 transition-colors relative
+                      ${(winner || currentPlayer !== playerRole) ? "pointer-events-none" : ""}
+                      ${!cell && currentPlayer === playerRole ? "hover:after:content-[''] hover:after:absolute hover:after:top-0 hover:after:left-0 hover:after:right-0 hover:after:bottom-0 hover:after:bg-white hover:after:bg-opacity-10 hover:after:rounded-full" : ""}`}
                     >
                       {cell && (
-                        <div className={`w-12 h-12 md:w-14 md:h-14 rounded-full shadow-inner
+                        <div className={`w-[80%] h-[80%] rounded-full shadow-inner
                           ${cell === "red" ? "bg-gradient-to-br from-red-400 to-red-600" : "bg-gradient-to-br from-yellow-300 to-yellow-500"}`}>
                           <div className="w-full h-full rounded-full flex items-center justify-center">
-                            <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full opacity-30
+                            <div className={`w-1/2 h-1/2 rounded-full opacity-30
                               ${cell === "red" ? "bg-red-300" : "bg-yellow-200"}`}></div>
                           </div>
                         </div>
