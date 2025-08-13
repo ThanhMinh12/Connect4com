@@ -48,6 +48,11 @@ function GameRoom() {
       socket.emit("joinRoom", newRoomId);
       setJoined(true);
     });
+
+    socket.on("playerJoined", () => {
+      playSound("click");
+      alert(`Opponent joined the room!`);
+    });
     
     socket.on("playerRole", setPlayerRole);
     socket.on("gameState", (gameState) => {
@@ -73,6 +78,7 @@ function GameRoom() {
       socket.off("gameState");
       socket.off("opponentLeft");
       socket.off("matchFound");
+      socket.off("playerJoined");
     };
   }, [socket, playSound, playerRole, currentPlayer, winner]);
 
@@ -216,7 +222,10 @@ function GameRoom() {
               <div className="flex items-center space-x-4">
                 <div className="flex items-center">
                   <div className={`w-4 h-4 rounded-full ${playerRole === 'red' ? 'bg-red-500' : 'bg-yellow-400'} mr-2`}></div>
-                  <span className="text-white">You: {playerRole === 'red' ? 'Red' : 'Yellow'}</span>
+                  <span className="text-white">
+                    You: {playerRole === 'red' ? 'Red' : 'Yellow'}
+                    {socket?.userId?.startsWith('anon_') && <span className="text-sm ml-1">(Guest)</span>}
+                  </span>
                 </div>
                 <button
                   className="px-4 py-2 bg-[#537178] hover:bg-[#638188] text-white rounded-md transition-colors duration-200"
