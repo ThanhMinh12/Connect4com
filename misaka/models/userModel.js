@@ -41,6 +41,11 @@ async function linkGoogleId(userId, googleId) {
   await db.query('UPDATE users SET google_id = $1 WHERE id = $2', [googleId, userId]);
 }
 
+async function getUsernameById(userId) {
+  const res = await db.query('SELECT username FROM users WHERE id = $1', [userId]);
+  return res.rows[0] ? res.rows[0].username : null;
+}
+
 module.exports = {
   findUserByEmail,
   createUser,
@@ -48,4 +53,5 @@ module.exports = {
   findUserByGoogleId,
   createGoogleUser,
   linkGoogleId,
+  getUsernameById,
 };
