@@ -62,19 +62,25 @@ const io = new Server(server, {
 io.use((socket, next) => {
   // Get token from frontend
   const token = socket.handshake.auth.token;
-  if (!token) {
-    console.log("[Socket Auth] No token provided");
-    return next(new Error("Authentication error"));
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      socket.userId = decoded.userId;
+      socket.isAuthenticated = true;
+      socketToUser[socket.id] = decoded.userId;
+      next();
+    }
+    catch (err) {
+      console.error("[Socket Auth] Token verification failed:", err.message);
+      next(new Error("Authentication error"));
+    }
   }
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.userId = decoded.userId;
-    socketToUser[socket.id] = decoded.userId;
+  else {
+    console.log("[Socket Auth] Anonymous user connecting");
+    socket.userId = `anon_${socket.id.substring(0, 8)}`;
+    socket.isAuthenticated = false;
+    socketToUser[socket.id] = socket.userId;
     next();
-  } catch (err) {
-    console.error("[Socket Auth] Token verification failed:", err.message);
-    next(new Error("Authentication error"));
   }
 });
 
@@ -85,10 +91,6 @@ const socketToUser = {};  // Map <socketId, userId>
 
 io.on("connection", (socket) => {
   const userId = socket.userId;
-  if (!userId) {
-    socket.emit("needLogin");
-    return;
-  }
   console.log(`User ${userId || 'anonymous'} connected with socket ID: ${socket.id}`);
 
   socket.on("createRoom", () => {
@@ -98,6 +100,7 @@ io.on("connection", (socket) => {
   
   socket.on("joinRoom", (roomId) => {
     socket.join(roomId);
+    socket.to(roomId).emit("playerJoined");
     if (!rooms[roomId]) {
       rooms[roomId] = { sockets: [], red: null, yellow: null };
     }
@@ -220,10 +223,6 @@ io.on("connection", (socket) => {
     const userId = socket.userId;
     console.log(`[MATCHMAKING] User ${userId} wants to play online`);
     console.log(`[MATCHMAKING] Queue length before: ${matchmakingQueue.length}`);
-    if (!userId) {
-      console.log("[MATCHMAKING] No userId provided, ignoring request");
-      return;
-    }
     const activeQueueIds = matchmakingQueue.filter(socketId => io.sockets.sockets.has(socketId) && socketToUser[socketId]);
     if (activeQueueIds.length !== matchmakingQueue.length) {
       console.log(`[MATCHMAKING] Cleaned queue, removed ${matchmakingQueue.length - activeQueueIds.length} disconnected sockets`);
@@ -321,6 +320,10 @@ io.on("connection", (socket) => {
 
 async function handleGameOver(roomId, winnerId, loserId) {
   console.log(`[Server] Game over: ${winnerId} beat ${loserId}`);
+  if (typeof winnerId === 'string' && winnerId.startsWith('anon_') || 
+      typeof loserId === 'string' && loserId.startsWith('anon_')) {
+    return;
+  }
 
   const [winnerElo, loserElo] = await getEloFromDB(winnerId, loserId);
   const { newWinnerElo, newLoserElo } = calculateElo(winnerElo, loserElo);
