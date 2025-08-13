@@ -114,12 +114,6 @@ const FrontPage = () => {
   <SidebarButton icon={LearnIcon} text="Learn" />
   <SidebarButton icon={PlayGameIcon} text="Play With Friend" to="/room/friendly" />
   {user && <SidebarButton icon={ProfileIcon} text="View Profile" to="/profile" />}
-  {!user && (
-    <div className="px-4 py-2 mt-4 text-sm text-amber-300">
-      <p>Playing as Guest</p>
-      <p className="mt-1">Sign up to track your stats!</p>
-    </div>
-  )}
 </Sidebar>
             </div>
           </div>
