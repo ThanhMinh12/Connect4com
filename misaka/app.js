@@ -13,6 +13,7 @@ const { v4: uuidv4 } = require("uuid");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const jwt = require('jsonwebtoken');
+const botPlayer = require("./botPlayer");
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
@@ -174,6 +175,34 @@ io.on("connection", (socket) => {
       const loserId = game.winner === 'red' ? room.yellow : room.red;
       handleGameOver(roomId, winnerId, loserId);
     }
+    else if (rooms[roomId]?.isBot && game.currentPlayer === 'yellow') {
+      setTimeout(() => {
+        if (!games[roomId] || games[roomId].winner) return;
+        const botMove = botPlayer.makeBotMove(
+          game.board, 
+          'yellow', 
+          rooms[roomId].botDifficulty || 'hard'
+        );
+        let row = -1;
+        for (let r = game.board.length - 1; r >= 0; r--) {
+          if (!game.board[r][botMove]) {
+            row = r;
+            break;
+          }
+        }
+        if (row !== -1) {
+          game.board[row][botMove] = 'yellow';
+          game.winner = checkWinner(game.board);
+          game.currentPlayer = 'red';
+          io.to(roomId).emit("gameState", game);
+          if (game.winner) {
+            const winnerId = game.winner === 'red' ? room.red : room.yellow;
+            const loserId = game.winner === 'red' ? room.yellow : room.red;
+            handleGameOver(roomId, winnerId, loserId);
+          }
+        }
+      }, 769);
+    }
   });
 
 
@@ -315,13 +344,36 @@ io.on("connection", (socket) => {
       matchmakingQueue.splice(index, 1);
       console.log(`[MATCHMAKING] User ${userId} left the queue`);
     }
-  })
+  });
+  socket.on("playWithBot", (difficulty) => {
+    const userId = socket.userId;
+    const roomId = uuidv4();
+    socket.join(roomId);
+    rooms[roomId] = {
+      sockets: [socket.id],
+      red: userId,
+      yellow: `bot_${uuidv4().substring(0, 8)}`,
+      isBot: true,
+      botDifficulty: difficulty
+    };
+    games[roomId] = {
+      board: Array.from({ length: 6 }, () => Array(7).fill(null)),
+      currentPlayer: 'red',
+      winner: null
+    };
+    socket.emit("matchFound", roomId);
+    socket.emit("playerRole", "red");
+    socket.emit("gameState", games[roomId]);
+    socket.emit("playWithBot", difficulty);
+  });
 });
 
 async function handleGameOver(roomId, winnerId, loserId) {
   console.log(`[Server] Game over: ${winnerId} beat ${loserId}`);
-  if (typeof winnerId === 'string' && winnerId.startsWith('anon_') || 
-      typeof loserId === 'string' && loserId.startsWith('anon_')) {
+  if (typeof winnerId === 'string' &&
+      (winnerId.startsWith('anon_') || winnerId.startsWith('bot_')) ||
+      typeof loserId === 'string' &&
+      (loserId.startsWith('anon_') || loserId.startsWith('bot_'))) {
     return;
   }
 
