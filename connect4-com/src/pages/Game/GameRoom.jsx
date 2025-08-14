@@ -11,6 +11,10 @@ import Connect4Sample from "./../../assets/Connect4Sample.svg";
   */
 
 function GameRoom() {
+
+  const [playWithBot, setPlayWithBot] = useState(false);
+  const [botDifficulty, setBotDifficulty] = useState('hard');
+
   const { playSound } = useSound();
   // Socket and routing
   const { socket } = useSocket();
@@ -70,7 +74,11 @@ function GameRoom() {
     });
     socket.on("opponentLeft", () => {
       alert("Opponent has gone.");
-    })
+    });
+    socket.on("playWithBot", (difficulty) => {
+      setPlayWithBot(true);
+      setBotDifficulty(difficulty);
+    });
 
     return () => {
       socket.off("roomCreated");
@@ -79,6 +87,7 @@ function GameRoom() {
       socket.off("opponentLeft");
       socket.off("matchFound");
       socket.off("playerJoined");
+      socket.off("playWithBot");
     };
   }, [socket, playSound, playerRole, currentPlayer, winner]);
 
@@ -117,6 +126,12 @@ function GameRoom() {
 
   return (
     <div className="min-h-screen bg-[#2f3136] font-Nunito">
+      {/* Add bot info near the top of your GameRoom */}
+      {playWithBot && (
+        <div className="py-1 px-3 bg-blue-600 text-white text-center text-sm">
+          Playing against Bot ({botDifficulty} difficulty)
+        </div>
+      )}
       <div className="max-w-5xl mx-auto p-6">
         {/* Header with logo */}
         <div className="text-center mb-8 pt-4">
