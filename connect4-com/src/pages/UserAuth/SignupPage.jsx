@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { signup } from '../../api/auth';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import Connect4Sample from "./../../assets/Connect4Sample.svg";
+
 
 function SignupPage() {
   const [email, setEmail] = useState('');
@@ -123,83 +126,87 @@ function SignupPage() {
   }, []);
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Create an account</h1>
-        <h2 className="text-lg font-medium text-gray-700 mb-4">Sign up with email</h2>
-        <div onSubmit={handleSignup} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              id="email"
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full p-2 border border-gray-300 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">Username</label>
-            <input
-              id="username"
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="w-full p-2 border border-gray-300 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full p-2 border border-gray-300 rounded mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <button
-            onClick={handleSignup}
-            className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:bg-blue-300 transition-colors"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Signing Up...' : 'Sign Up'}
-          </button>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-        </div>
-        <hr className="my-6 border-gray-300" />
-        <h2 className="text-lg font-medium text-gray-700 mb-4">Or sign up with Google</h2>
-        <div id="google-button" className="mt-4 flex justify-center">
-          {!import.meta.env.VITE_GOOGLE_CLIENT_ID && (
-            <p className="text-sm text-gray-500">
-              Google Sign-In not configured. Please add VITE_GOOGLE_CLIENT_ID to your .env file.
-            </p>
-          )}
+    <div className="flex justify-center items-center min-h-screen bg-[#2f3136] font-Nunito">
+      <div className="w-full max-w-md p-8">
+        <div className="mb-6 text-center">
+          <img 
+            src={Connect4Sample} 
+            alt="Connect4" 
+            className="w-32 h-32 mx-auto"
+          />
+          <h1 className="text-3xl font-bold text-white mt-4">Create Account</h1>
+          <p className="text-gray-400 mt-2">Join Connect4 and start playing</p>
         </div>
         
-        {/* Test Google configuration */}
-        {import.meta.env.DEV && (
-          <div className="mt-4 p-2 bg-blue-50 rounded text-xs">
-            <p className="font-bold">Google Configuration Test:</p>
-            <p>Client ID: {import.meta.env.VITE_GOOGLE_CLIENT_ID ? '✅ Set' : '❌ Missing'}</p>
-            <p>Origin: {window.location.origin}</p>
-            <p>Status: {window.google ? '✅ Google loaded' : '❌ Google not loaded'}</p>
-            <p className="text-red-500 font-bold">Add this to Google Cloud Console:</p>
-            <p className="bg-yellow-100 p-1 rounded">{window.location.origin}</p>
-            <button 
-              onClick={() => console.log('Google object:', window.google)}
-              className="mt-2 px-2 py-1 bg-blue-200 rounded text-xs"
+        <div className="bg-black bg-opacity-20 rounded-lg p-6 shadow-lg">
+          <form onSubmit={handleSignup} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email</label>
+              <input
+                id="email"
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full p-3 bg-[#2f3136] text-white rounded-md border border-gray-700 focus:border-[#60a7b1] focus:outline-none mt-1"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-300">Username</label>
+              <input
+                id="username"
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="w-full p-3 bg-[#2f3136] text-white rounded-md border border-gray-700 focus:border-[#60a7b1] focus:outline-none mt-1"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300">Password</label>
+              <input
+                id="password"
+                type="password"
+                placeholder="Password (min 8 characters)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full p-3 bg-[#2f3136] text-white rounded-md border border-gray-700 focus:border-[#60a7b1] focus:outline-none mt-1"
+              />
+            </div>
+            
+            <button
+              type="submit"
+              className="w-full p-3 bg-[#60a7b1] hover:bg-[#70b7b9] text-white rounded-md transition-colors duration-200 font-medium disabled:opacity-50"
+              disabled={isLoading}
             >
-              Test Google Object
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>
+            
+            {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
+          </form>
+          
+          <div className="my-6 flex items-center">
+            <hr className="flex-1 border-gray-700" />
+            <span className="px-3 text-gray-400 text-sm">OR</span>
+            <hr className="flex-1 border-gray-700" />
           </div>
-        )}
+          
+          <div id="google-button" className="w-full"></div>
+          
+          <div className="mt-6 text-center">
+            <p className="text-gray-400">
+              Already have an account?{' '}
+              <Link to="/login" className="text-[#60a7b1] hover:text-[#70b7b9]">
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
