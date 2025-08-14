@@ -16,15 +16,13 @@ function WaitRoom() {
   const [waitTime, setWaitTime] = useState(0);
   const [showBotOption, setShowBotOption] = useState(false);
   const [botDifficulty, setBotDifficulty] = useState('medium');
-  
-  // Timer for wait time
   useEffect(() => {
     let interval;
     if (status === 'waiting') {
       interval = setInterval(() => {
         setWaitTime(prev => {
           const newTime = prev + 1;
-          if (newTime >= 1 && !showBotOption) {
+          if (newTime >= 7 && !showBotOption) {
             setShowBotOption(true);
             playSound('click');
           }
