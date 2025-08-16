@@ -127,7 +127,7 @@ Connect4com/
 2. **Choose Game Mode**:
    - **Friendly Match**: Create a room and invite friends
    - **Quick Play**: Get matched with random players
-   - **AI Practice**: Play against the computer
+   - **AI Practice**: If match making takes too hard, play with one of our bots!
 3. **Game Rules**: Drop your colored discs to connect four in a row (horizontally, vertically, or diagonally)
 4. **Win**: Be the first to connect four discs to win the game!
 
