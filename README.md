@@ -6,7 +6,7 @@
 
 A modern, real-time multiplayer Connect Four game built with React, Node.js, and Socket.IO. Challenge your friends online or play against an AI opponent!
 
-**[🎮 Play Now](https://connect4client-seven.vercel.app/)**
+**[Play Now](https://connect4client-seven.vercel.app/)**
 
 ## Features
 
