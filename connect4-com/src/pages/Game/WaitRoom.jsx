@@ -22,7 +22,7 @@ function WaitRoom() {
       interval = setInterval(() => {
         setWaitTime(prev => {
           const newTime = prev + 1;
-          if (newTime >= 7 && !showBotOption) {
+          if (newTime >= 1 && !showBotOption) {
             setShowBotOption(true);
             playSound('click');
           }
