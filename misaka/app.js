@@ -370,6 +370,8 @@ io.on("connection", (socket) => {
 
 async function handleGameOver(roomId, winnerId, loserId) {
   console.log(`[Server] Game over: ${winnerId} beat ${loserId}`);
+  await db.query(`INSERT INTO matches (player1_id, player2_id, winner_id)
+                  VALUES ($1, $2, $3)`, [winnerId, loserId, winnerId]);
   if (typeof winnerId === 'string' &&
       (winnerId.startsWith('anon_') || winnerId.startsWith('bot_')) ||
       typeof loserId === 'string' &&
@@ -382,9 +384,6 @@ async function handleGameOver(roomId, winnerId, loserId) {
 
   await updateEloInDB(winnerId, newWinnerElo);
   await updateEloInDB(loserId, newLoserElo);
-
-  await db.query(`INSERT INTO matches (player1_id, player2_id, winner_id)
-                  VALUES ($1, $2, $3)`, [winnerId, loserId, winnerId]);
 
   io.to(roomId).emit("eloUpdate", {
     winnerId, newWinnerElo,
